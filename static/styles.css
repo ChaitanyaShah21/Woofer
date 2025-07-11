@@ -1,0 +1,39 @@
+body
+{
+    margin: 0;
+    height: 100%;
+}
+
+a
+{
+    color: black;
+    text-decoration: none;
+}
+
+
+form
+{
+    padding: 2rem;
+
+}
+
+h3
+{
+    font-family: 'Titillium Web', sans-serif;
+}
+
+.error
+{
+    color:red;
+}
+
+.woofer
+{
+    font-family: 'Chakra Petch', sans-serif;
+    color: #ffaa00;
+}
+
+#homepage-logo
+{
+    width: 7rem;
+}

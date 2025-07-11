@@ -1,0 +1,41 @@
+{% extends "home_layout.html" %}
+
+{% block title %}
+    Homepage
+{% endblock %}
+
+{% block body %}
+    <div class="card">
+        <h4 class="card-header text-center">Send a <span class="woofer"><strong>WOOF!</strong></span> </h4>
+      <div class="card-body">
+        <form action="/" method="post"id="post-woof">
+          <div class="input-group">
+            <textarea class="form-control" id="send-woof" name="send-woof" placeholder="What's on your mind?" ></textarea>
+            <script>
+                const myText = document.getElementById("send-woof");
+                myText.style.cssText = `height: ${myText.scrollHeight}px; overflow-y: hidden`;
+                myText.addEventListener("input", function(){
+                    this.style.height = "auto";
+                    this.style.height = `${this.scrollHeight}px`;
+                });
+            </script>
+              <button type="submit" class="btn text-center woof" >WOOF</button>
+          </div>
+          <small class="error">
+              {{error}}
+          </small>
+        </form>
+      </div>
+    </div>
+    {% for woofs in woof_data %}
+    <div class="card my-2">
+        <div class="card-body">
+            <h5 class="card-title">{{woofs['firstName']}} {{woofs['lastName']}}</h5>
+            <h6 class="card-subtitle mb-2 text-muted">@{{woofs['username']}}</h6>
+            <p class="card-text">{{woofs['woof']}}</p>
+            <small class="text-muted">{{woofs['timestamp']}} UST</small>
+        </div>
+    </div>
+    {% endfor %}
+
+{% endblock %}

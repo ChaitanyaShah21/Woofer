@@ -1,0 +1,55 @@
+{% extends "home_layout.html" %}
+
+{% block title %}
+    Profile
+{% endblock %}
+
+{% block body %}
+    <div class="card">
+        <h4 class="card-header text-center">My <span class="woofer"><strong>Profile</strong></span> </h4>
+
+    <div class="card my-2">
+        <div class="card-body">
+            <h5 class="card-title">{{user['firstName']}} {{user['lastName']}}</h5>
+            <h6 class="card-subtitle mb-2 text-muted">@{{user['username']}}</h6>
+        </div>
+    </div>
+
+    <div class="card my-2">
+        <div class="card-body">
+            <h5 class="card-title">Number of <span class="woofer"><strong>WOOFS</strong></span> you made : </h5>
+            <h5 class="card-subtitle mb-2 text-muted">{{woof_num}}</h5>
+        </div>
+    </div>
+
+    <div class="card my-2">
+        <div class="card-body">
+            <h5 class="card-title">Change Password</h5>
+            <form action="/profile" method="post" class="needs-validation" id="change_password" autocomplete="off">
+
+                  <div class="form-floating mb-3">
+                    <input type="password" autocomplete="new-password" class="form-control" id="old_password" name="old_password" placeholder="Old Password">
+                    <label for="old_password">Old Password</label>
+                  </div>
+
+                  <div class="form-floating mb-3">
+                    <input type="password" autocomplete="new-password" class="form-control" id="new_password" name="new_password" placeholder="New Password">
+                    <label for="new_password">New Password</label>
+                  </div>
+                  <small class="error">
+                      {{error}}
+                  </small>
+                  <small class="success">
+                      {{success}}
+                  </small>
+                  <div class="d-grid gap-2 mt-3">
+                      <button class="btn btn-primary" type="submit">Change Password</button>
+                  </div>
+            </form>
+        </div>
+    </div>
+
+    </div>
+
+
+{% endblock %}

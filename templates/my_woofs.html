@@ -1,0 +1,23 @@
+{% extends "home_layout.html" %}
+
+{% block title %}
+    My Woofs
+{% endblock %}
+
+{% block body %}
+    <div class="card">
+        <h4 class="card-header text-center">My <span class="woofer"><strong>WOOFS!</strong></span> </h4>
+    {% for woofs in woof_data %}
+    <div class="card my-2">
+        <div class="card-body">
+            <h5 class="card-title">{{woofs['firstName']}} {{woofs['lastName']}}</h5>
+            <h6 class="card-subtitle mb-2 text-muted">@{{woofs['username']}}</h6>
+            <p class="card-text">{{woofs['woof']}}</p>
+            <small class="text-muted">{{woofs['timestamp']}} UST</small>
+        </div>
+    </div>
+    {% endfor %}
+    </div>
+
+
+{% endblock %}

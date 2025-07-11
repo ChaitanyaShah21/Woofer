@@ -1,0 +1,5 @@
+cs50
+Flask~=2.2.2
+Flask-Session
+Werkzeug~=2.2.2
+
