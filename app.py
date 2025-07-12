@@ -227,11 +227,11 @@ def my_woofs():
     for woofs in all_woofs:
 
         entry = {
-            'woof': woofs['woof'],
-            'timestamp': woofs['timestamp'],
-            'username': user['username'],
-            'firstName': user['firstName'],
-            'lastName': user['lastName'],
+            'woof': woofs.woof,
+            'timestamp': woofs.timestamp,
+            'username': user.username,
+            'firstName': user.firstName,
+            'lastName': user.lastName,
         }
         woof_data.append(entry)
     if request.method == "GET":
