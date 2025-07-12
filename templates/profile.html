@@ -5,6 +5,16 @@
 {% endblock %}
 
 {% block body %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show mt-3" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
     <div class="card">
         <h4 class="card-header text-center">My <span class="woofer"><strong>Profile</strong></span> </h4>
 
@@ -36,12 +46,7 @@
                     <input type="password" autocomplete="new-password" class="form-control" id="new_password" name="new_password" placeholder="New Password">
                     <label for="new_password">New Password</label>
                   </div>
-                  <small class="error">
-                      {{error}}
-                  </small>
-                  <small class="success">
-                      {{success}}
-                  </small>
+
                   <div class="d-grid gap-2 mt-3">
                       <button class="btn btn-primary" type="submit">Change Password</button>
                   </div>

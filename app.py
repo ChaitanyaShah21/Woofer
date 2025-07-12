@@ -163,6 +163,7 @@ def index():
             new_woof = Woof(woof=woof, user_id=session["user_id"])
             db.session.add(new_woof)
             db.session.commit()
+            return redirect("/")
 
 
             all_woofs = Woof.query.order_by(Woof.timestamp.desc()).all()
@@ -254,33 +255,25 @@ def profile():
         new_password = request.form.get("new_password")
 
         if not old_password or not new_password:
-            error = "Please fill both old and new passwords!"
-            return render_template("profile.html", user=user, woof_num=woof_num, error=error, success=success)
+            flash("Please fill both old and new passwords!", "danger")
+            return redirect("/profile")
 
-        user = User.query.get(session["user_id"])
-        correct_hash = user.hash
+        if not check_password_hash(user.hash, old_password):
+            flash("Incorrect Old Password", "danger")
+            return redirect("/profile")
 
-        if not check_password_hash(correct_hash, old_password):
-            error = "Incorrect Old Password"
-            return render_template("profile.html", user=user, woof_num=woof_num, error=error, success=success)
-
-        elif not check_password(new_password):
-            error = "New password must contain a minimum of 8 characters, including at least 1 uppercase and lowercase" \
-                    " letter, at least 1 number and at least one symbol cd ."
-            return render_template("profile.html", user=user, woof_num=woof_num, error=error, success=success)
+        if not check_password(new_password):
+            flash("New password must contain a minimum of 8 characters, including at least 1 uppercase and lowercase letter, at least 1 number and at least one symbol.", "danger")
+            return redirect("/profile")
 
         if old_password == new_password:
-            error = "New password cannot be same as the old password"
-            success = ""
-            return render_template("profile.html", user=user, woof_num=woof_num, error=error, success=success)
-        # generate new hash
-        password_hash = generate_password_hash(new_password)
+            flash("New password cannot be the same as the old password.", "warning")
+            return redirect("/profile")
+
         user.hash = generate_password_hash(new_password)
         db.session.commit()
-        error = ""
-        success = "Password Successfully updated!"
-        return render_template("profile.html", user=user, woof_num=woof_num, error=error, success=success)
-
+        flash("Password successfully updated!", "success")
+        return redirect("/profile")
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
