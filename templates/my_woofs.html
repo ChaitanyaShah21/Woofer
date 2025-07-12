@@ -7,13 +7,37 @@
 {% block body %}
     <div class="card">
         <h4 class="card-header text-center">My <span class="woofer"><strong>WOOFS!</strong></span> </h4>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}    
     {% for woofs in woof_data %}
     <div class="card my-2">
-        <div class="card-body">
+        <div class="card-body ">
             <h5 class="card-title">{{woofs['firstName']}} {{woofs['lastName']}}</h5>
             <h6 class="card-subtitle mb-2 text-muted">@{{woofs['username']}}</h6>
             <p class="card-text">{{woofs['woof']}}</p>
+            <div class="d-flex bd-highlight mb-3">
+            <div class = " p-2 bd-highlight">   
             <small class="text-muted">{{woofs['timestamp']}} UST</small>
+            </div>
+            <div class="ms-auto p-2 bd-highlight">
+            <form action= "/delete-woof"  method="POST" class="d-inline">
+                <input type="hidden" name="woof_id" value="{{woofs['id']}}">
+                <button class="btn btn-danger btn-sm d-flex justify-content-center align-items-center col-6 px-4"
+                onclick="return confirm('Are you sure you want to delete this woof?')" type="submit">
+                <i class="bi bi-trash"></i>
+                </button>
+            </form>  
+            
+            </div>
+            </div>
         </div>
     </div>
     {% endfor %}

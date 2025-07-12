@@ -24,7 +24,7 @@ app.config["SESSION_PERMANENT"] = True
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-# use supabase postgres
+# use render postgres
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -228,6 +228,7 @@ def my_woofs():
     for woofs in all_woofs:
 
         entry = {
+            'id': woofs.id,
             'woof': woofs.woof,
             'timestamp': woofs.timestamp,
             'username': user.username,
@@ -365,6 +366,21 @@ def register():
             db.session.add(new_user)
             db.session.commit()
             return redirect("/login")
+        
+
+@app.route("/delete-woof", methods=["POST"])
+@login_required
+def delete_woof():
+    woof_id = request.form.get("woof_id")
+    woof = Woof.query.get(woof_id)
+
+    if woof and woof.user_id == session["user_id"]:
+        db.session.delete(woof)
+        db.session.commit()
+        flash("Woof deleted successfully!", "success")
+    else:
+        flash("Woof doesnt exist or You are not authorized to delete this woof", "danger")    
+    return redirect("/my-woofs")    
 
 
 if __name__ == '__main__':
