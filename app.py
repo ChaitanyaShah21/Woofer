@@ -7,7 +7,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from dotenv import load_dotenv
-from zoneinfo import ZoneInfo
+
 
 
 load_dotenv()
@@ -144,7 +144,7 @@ def index():
     for woof in all_woofs:
         entry = {
             'woof': woof.woof,
-            'timestamp':woof.timestamp.astimezone(ZoneInfo("Asia/Kolkata")).strftime("%d %b %Y, %H:%M"),
+            'timestamp':woof.timestamp.isoformat(),
             'username': woof.author.username,
             'firstName': woof.author.firstName,
             'lastName': woof.author.lastName,
@@ -231,7 +231,7 @@ def my_woofs():
         entry = {
             'id': woofs.id,
             'woof': woofs.woof,
-            'timestamp': woofs.timestamp.astimezone(ZoneInfo("Asia/Kolkata")).strftime("%d %b %Y, %H:%M"),
+            'timestamp': woofs.timestamp.isoformat(),
             'username': user.username,
             'firstName': user.firstName,
             'lastName': user.lastName,

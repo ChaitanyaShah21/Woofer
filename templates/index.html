@@ -33,9 +33,32 @@
             <h5 class="card-title">{{woofs['firstName']}} {{woofs['lastName']}}</h5>
             <h6 class="card-subtitle mb-2 text-muted">@{{woofs['username']}}</h6>
             <p class="card-text">{{woofs['woof']}}</p>
-            <small class="text-muted">{{woofs['timestamp']}} IST</small>
+            <small class="text-muted local-time" data-utc="{{ woofs['timestamp'] }}"></small>
         </div>
     </div>
     {% endfor %}
+
+ <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const timeElements = document.querySelectorAll('.local-time');
+    timeElements.forEach(el => {
+      const utcTime = el.getAttribute('data-utc');
+      if (utcTime) {
+        const localDate = new Date(utcTime);
+
+        const formatted = localDate.toLocaleString([], {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZoneName: 'short'  // This adds the timezone abbreviation
+        });
+
+        el.textContent = formatted;
+      }
+    });
+  });
+</script>   
 
 {% endblock %}

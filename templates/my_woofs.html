@@ -25,7 +25,7 @@
             <p class="card-text">{{woofs['woof']}}</p>
             <div class="d-flex bd-highlight mb-3">
             <div class = " p-2 bd-highlight">   
-            <small class="text-muted">{{woofs['timestamp']}} IST</small>
+            <small class="text-muted local-time" data-utc="{{ woofs['timestamp'] }}"></small>
             </div>
             <div class="ms-auto p-2 bd-highlight">
             <form action= "/delete-woof"  method="POST" class="d-inline">
@@ -43,5 +43,29 @@
     {% endfor %}
     </div>
 
+ <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const timeElements = document.querySelectorAll('.local-time');
+    timeElements.forEach(el => {
+      const utcTime = el.getAttribute('data-utc');
+      if (utcTime) {
+        const localDate = new Date(utcTime);
+
+        const formatted = localDate.toLocaleString([], {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZoneName: 'short'  // This adds the timezone abbreviation
+        });
+
+        el.textContent = formatted;
+      }
+    });
+  });
+</script>   
+
 
 {% endblock %}
+
