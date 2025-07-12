@@ -6,6 +6,10 @@ import re
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 
 
@@ -22,7 +26,7 @@ Session(app)
 
 # use supabase postgres
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:[1NhFPIgvcu8KounQ]@db.vxgbgpfwmwgjagozmuvj.supabase.co:5432/postgres'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -45,6 +49,18 @@ class Woof(db.Model):
     woof = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+
+
+
+
+# ## RUN ONCE AFTER DATABASE RESET
+# with app.app_context():
+#     db.create_all()
+
+
+
+
 
 
 # # Make sure API key is set
