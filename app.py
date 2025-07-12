@@ -1,10 +1,13 @@
 import os
 from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
-import sqlite3
 from helpers import login_required
 import re
 from werkzeug.security import check_password_hash, generate_password_hash
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+
+
 
 # Configure application
 app = Flask(__name__)
@@ -17,10 +20,32 @@ app.config["SESSION_PERMANENT"] = True
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-# use SQLite database
-con = sqlite3.connect("woofer.db", check_same_thread=False)
-con.row_factory = sqlite3.Row
-cur = con.cursor()
+# use supabase postgres
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:[1NhFPIgvcu8KounQ]@db.vxgbgpfwmwgjagozmuvj.supabase.co:5432/postgres'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    firstName = db.Column(db.Text, nullable=False)
+    lastName = db.Column(db.Text, nullable=False)
+    username = db.Column(db.Text, nullable=False, unique=True)
+    hash = db.Column(db.Text, nullable=False)
+    followers = db.Column(db.Integer, nullable=False, default=0)
+    following = db.Column(db.Integer, nullable=False, default=0)
+    email = db.Column(db.String(320), nullable=False)
+    woofs = db.relationship('Woof', backref='author', lazy=True)
+
+class Woof(db.Model):
+    __tablename__ = 'woofs'
+    id = db.Column(db.Integer, primary_key=True)
+    woof = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
 
 # # Make sure API key is set
 # if not os.environ.get("API_KEY"):
@@ -97,16 +122,15 @@ def index():
     data = {
         'woof': '',
     }
-    all_woofs = cur.execute("SELECT * FROM woofs ORDER BY timestamp DESC").fetchall()
+    all_woofs = Woof.query.order_by(Woof.timestamp.desc()).all()
     woof_data = []
-    for woofs in all_woofs:
-        user = cur.execute("SELECT * FROM users WHERE id = ?", (woofs['user_id'],)).fetchone()
+    for woof in all_woofs:
         entry = {
-            'woof': woofs['woof'],
-            'timestamp': woofs['timestamp'],
-            'username': user['username'],
-            'firstName': user['firstName'],
-            'lastName': user['lastName'],
+            'woof': woof.woof,
+            'timestamp': woof.timestamp,
+            'username': woof.author.username,
+            'firstName': woof.author.firstName,
+            'lastName': woof.author.lastName,
         }
         woof_data.append(entry)
     if request.method == "GET":
@@ -120,22 +144,23 @@ def index():
         else:
 
             data['woof'] = ""
-            cur.execute("INSERT INTO woofs (woof, user_id) VALUES(?, ?)",
-                       (woof, session["user_id"],))
-            con.commit()
+            new_woof = Woof(woof=woof, user_id=session["user_id"])
+            db.session.add(new_woof)
+            db.session.commit()
 
-            all_woofs = cur.execute("SELECT * FROM woofs ORDER BY timestamp DESC").fetchall()
+
+            all_woofs = Woof.query.order_by(Woof.timestamp.desc()).all()
             woof_data = []
-            for woofs in all_woofs:
-                user = cur.execute("SELECT * FROM users WHERE id = ?", (woofs['user_id'],)).fetchone()
+            for woof in all_woofs:
                 entry = {
-                    'woof': woofs['woof'],
-                    'timestamp': woofs['timestamp'],
-                    'username': user['username'],
-                    'firstName': user['firstName'],
-                    'lastName': user['lastName'],
+                    'woof': woof.woof,
+                    'timestamp': woof.timestamp,
+                    'username': woof.author.username,
+                    'firstName': woof.author.firstName,
+                    'lastName': woof.author.lastName,
                 }
                 woof_data.append(entry)
+
             return render_template("index.html", error="", woof_data=woof_data)
 
 
@@ -156,11 +181,11 @@ def login():
             return render_template("login.html", error=error)
 
         else:
-            user_search = cur.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchall()
-            if len(user_search) != 1 or not check_password_hash(user_search[0]["hash"], password):
+            user_search = User.query.filter_by(username=username).first()
+            if not user_search or not check_password_hash(user_search.hash, password):
                 error = "Invalid username and/or password"
                 return render_template("login.html", error=error)
-            session["user_id"] = user_search[0]["id"]
+            session["user_id"] = user_search.id
             return redirect("/")
 
 
@@ -180,8 +205,8 @@ def logout():
 @login_required
 def my_woofs():
 
-    all_woofs = cur.execute("SELECT * FROM woofs WHERE user_id = ? ORDER BY timestamp DESC", (session['user_id'],)).fetchall()
-    user = cur.execute("SELECT * FROM users WHERE id = ?", (session['user_id'],)).fetchone()
+    user = User.query.get(session['user_id'])
+    all_woofs = Woof.query.filter_by(user_id=user.id).order_by(Woof.timestamp.desc()).all()
     woof_data = []
     for woofs in all_woofs:
 
@@ -204,8 +229,8 @@ def profile():
 
     error = ""
     success = ""
-    user = cur.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],)).fetchone()
-    woof_num = cur.execute("SELECT COUNT(*) FROM woofs WHERE user_id = ?", (session["user_id"],)).fetchone()['COUNT(*)']
+    user = User.query.get(session["user_id"])
+    woof_num = Woof.query.filter_by(user_id=session["user_id"]).count()
     if request.method == "GET":
         return render_template("profile.html", user=user, woof_num=woof_num, error=error, success=success)
     elif request.method == "POST":
@@ -216,7 +241,8 @@ def profile():
             error = "Please fill both old and new passwords!"
             return render_template("profile.html", user=user, woof_num=woof_num, error=error, success=success)
 
-        correct_hash = cur.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],)).fetchone()["hash"]
+        user = User.query.get(session["user_id"])
+        correct_hash = user.hash
 
         if not check_password_hash(correct_hash, old_password):
             error = "Incorrect Old Password"
@@ -233,8 +259,8 @@ def profile():
             return render_template("profile.html", user=user, woof_num=woof_num, error=error, success=success)
         # generate new hash
         password_hash = generate_password_hash(new_password)
-        cur.execute("UPDATE users SET hash = ? WHERE id = ?", (password_hash, session["user_id"],))
-        con.commit()
+        user.hash = generate_password_hash(new_password)
+        db.session.commit()
         error = ""
         success = "Password Successfully updated!"
         return render_template("profile.html", user=user, woof_num=woof_num, error=error, success=success)
@@ -281,8 +307,8 @@ def register():
             uname = "is-invalid"
             uname_error = "Required."
         else:
-            user_search = cur.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchall()
-            if len(user_search) != 0:
+            user_search = User.query.filter_by(username=username).first()
+            if user_search:
                 uname = "is-invalid"
                 uname_error = "Username already taken!"
             else:
@@ -292,8 +318,8 @@ def register():
             mail = "is-invalid"
             email_error = "Please enter a valid email address."
         else:
-            email_search = cur.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchall()
-            if len(email_search) != 0:
+            email_search = User.query.filter_by(email=email).first()
+            if email_search:
                 mail = "is-invalid"
                 email_error = "Email already linked to an existing account."
             else:
@@ -325,15 +351,16 @@ def register():
             return render_template("register.html", data=register_data)
         else:
             password_hash = generate_password_hash(password)
-            cur.execute("INSERT INTO users (firstName, lastName, username, hash, email) VALUES(?, ?, ?, ?, ?)",
-                       (first_name, last_name, username, password_hash, email,))
-            con.commit()
+            new_user = User(firstName=first_name, lastName=last_name,
+                username=username, email=email, hash=generate_password_hash(password))
+            db.session.add(new_user)
+            db.session.commit()
             return redirect("/login")
 
 
 if __name__ == '__main__':
     app.run(
-        #host='127.0.0.1',
-        #port=5001,
-        #debug=True
+        # host='127.0.0.1',
+        # port=5001,
+        # debug=True
     )
