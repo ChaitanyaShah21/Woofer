@@ -90,7 +90,7 @@ def check_password(password):
         elif not re.search("[_@$]", password):
             flag = -1
             break
-        elif re.search("\s", password):
+        elif re.search(r"\s", password):
             flag = -1
             break
         else:
