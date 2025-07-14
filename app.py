@@ -276,7 +276,7 @@ def forgot_password():
 @app.route("/reset-password/<token>", methods=["POST", "GET"])
 def reset_password(token):
     try:
-        email = serializer.loads(token, salt="reset=password", max_age=3600)
+        email = serializer.loads(token, salt="reset-password", max_age=3600)
     except(SignatureExpired, BadSignature):
         return "Invalid or expired token", 400
 
