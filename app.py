@@ -263,9 +263,8 @@ def forgot_password():
             db.session.commit()
             token = serializer.dumps(email, salt="reset-password")
             link = url_for("reset_password", token=token, _external=True)
-            msg= Message("woofer Password Reset", recipients=[email])
-            msg.body = f""""
-            Click to reset your password:
+            msg= Message("Woofer Password Reset", recipients=[email])
+            msg.body = f""""Click to reset your password:
             {link}
             This link will expire in 1 hour."""
             mail.send(msg)
