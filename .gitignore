@@ -2,3 +2,4 @@
 .env
 flask_session/
 woofer.db
+todo.txt
