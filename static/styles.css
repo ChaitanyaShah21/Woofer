@@ -37,3 +37,9 @@ h3
 {
     width: 7rem;
 }
+
+input.form-control.is-invalid ~ .toggle-password,
+input.form-control.is-valid ~ .toggle-password 
+{
+  z-index: 5; /* Makes sure it stays clickable & aligned */
+}
