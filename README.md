@@ -1,47 +1,117 @@
-# WOOFER
-#### https://woofer-rsb9.onrender.com/
-#### Video Demo:  https://www.youtube.com/watch?v=ExM4j3fED9s
-#### Description:
+<div align='center' classname="text-3xl font-mono font-bold">
+<h1>🐶 Woofer - A Microblogging Platform </h1>
+</div>
+<div align='center' classname="text-3xl font-mono font-bold">
+  https://woofer-rsb9.onrender.com/
+</div>
 
-WOOFER is a social media (Twitter) clone WebApp. It is made using
-Flask, along with HTML,CSS (and Bootstrap), and JavaScript.
+## 📝 Description
 
-It allows users to create account, login and post WOOFS (tweets,
-text-only).
+Woofer is a microblogging web application built with Flask, SQLAlchemy, and PostgreSQL. Users can register, log in, create short "woofs" (posts), view woofs from other users, manage their profile, and reset their password via email verification.  The application emphasizes a clean user interface and a straightforward user experience.
 
-All data is stored in a SQL database (woofer.db) using sqlite.
-There are two tables in the database, one containing user data,
-and the other containing Woof data (content, OP, timestamp).
+## 🚀 Features
 
-All the validation has been done server-side to ensure that only
-correct data reaches the database.
+*   **User Authentication:** 🔒 Secure registration and login system with password hashing.
+*   **Email Verification:** ✅ Users must verify their email address upon registration.
+*   **Password Reset:** ✉️ Users can reset their passwords via email.
+*   **Woofing (Posting):** 📝 Users can create and post "woofs" (short messages).
+*   **Woof Display:** 📰 Displays woofs from all users in reverse chronological order.
+*   **My Woofs:** 🐾 Users can view only their own woofs.
+*   **Profile Management:** 👤 Users can view and update their profile information, including changing their password.
+*   **Woof Deletion:** 🗑️ Users can delete their own woofs.
+*   **Responsive Design:**📱 Utilizes Bootstrap for a responsive and user-friendly interface.
 
-All the front end web pages have been designed using Bootstrap 5.
-If the user is not logged in, user is redirected to '/login'
-route, where he can log in or go to '/register' to register a
-new user ("Create New Account" button).
+## 🛠️ Technologies Used
 
-Homepage or "index.html" provides access to all the woofs (tweets)
-made in the platform (latest-first) and provides a way to make a
-woof.
+*   **Backend:**
+    *   Python 🐍
+    *   Flask 🌐
+    *   Flask-SQLAlchemy 🗄️
+    *   PostgreSQL 🐘
+    *   Flask-Session 🍪
+    *   Flask-Mail ✉️
+    *   itsdangerous 🔑
+    *   dotenv ⚙️
+    *   Werkzeug 🛠️
+    *   gunicorn ⚙️
+*   **Frontend:**
+    *   HTML 🧱
+    *   CSS 🎨
+    *   JavaScript 📜
+    *   Bootstrap 💙
+*   **Other:**
+    *   psycopg2-binary 💿
+    *   gunicorn ⚙️
 
-My Woofs page displays all the woofs made by the current user
-(latest-first).
+## ⚙️ Setup Instructions
 
-Profile page displays the Name, Username, and Number of Woofs
-made by the user. It also provides a way to change the user's
-password.
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/ChaitanyaShah21/Woofer.git
+    cd Woofer
+    ```
 
-Log out tab clears the session and logs the user out.
+2.  **Create and activate a virtual environment:**
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    ```
 
-The inspiration of the design of this WebApp is taken from Twitter and Facebook. The name Woofer is inspired by Twitter, but the twitter birf is swapped with a dog paw. All the front-end design in this app is done using Bootstrap 5. This includes the login form, register from, page layouts, nav bar, etc. The inspiration for the colour scheme is taken from Color Hunt (www.colorhunt.co). Server side validation is implemented instead of client side verification to ensure that only allowed data is entered in the database. Passwords created have to be atleast 8 characters long, with atleast one lowercase letter ,atleast one uppercase letter, atleast one number, and atleast one symbol from from _ or @ or $.
+3.  **Install dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-As it is a very basic social media clone with only text 'woofs', only two tables are made in the database:- users table to store user details like name, username, email, userid, etc., and woofs table to store the content of the woof, orignal poster, and timestamp of when the woof was made. Woofs are display according to this timestamp, latest first.
+4.  **Set up environment variables:**
+    *   Create a `.env` file in the root directory.
+    *   Add the following environment variables, replacing the values with your actual credentials:
 
-Ideas that may be implemented at a later time:-
--> There are extra columns availible in the users table for followers and following, like that in twitter and instagram, which records the number of users followed by and following the user. An additional table is to be made to record all these interactions.
--> The ability to like and comment a woof can be implemented. For this the woof table has to be expanded and seperate tables for likes and comments be made.
--> If the ability to like or comment is implemented, the problem occuring during simultaneus likes and comments (only one is recorded at a time) has to be dealt with.
--> The ability to post photos can be implemented.
--> Only a particular ammount of woofs should be loaded at a time and rest loaded after scrolling to reduce load on server.
--> Email verification can be implemented while creating accounts.
+        ```
+        SECRET_KEY="your_secret_key"
+        DATABASE_URL="your_postgresql_connection_string"
+        MAIL_SERVER="your_mail_server"
+        MAIL_PORT="your_mail_port"
+        MAIL_USERNAME="your_mail_username"
+        MAIL_PASSWORD="your_mail_password"
+        MAIL_DEFAULT_SENDER="your_mail_sender"
+        ```
+    *   Ensure your PostgreSQL database is running and accessible.
+
+5.  **Initialize the database:**
+
+    *   Start the python interpreter
+        ```bash
+        python
+        ```
+    *   Run the following code to create the database tables:
+        ```python
+        from app import app, db
+        with app.app_context():
+            db.create_all()
+        ```
+
+6.  **Run the application:**
+    ```bash
+    python app.py
+    ```
+    Or using gunicorn
+     ```bash
+    gunicorn --bind 0.0.0.0:5000 app:app
+    ```
+
+## 💻 Usage
+
+1.  **Register:** Navigate to `/register` to create a new account.  Ensure you use a valid email address for verification.
+2.  **Verify Email:** Click the verification link sent to your email address.
+3.  **Login:** Navigate to `/login` to log in with your username and password.
+4.  **Home:** The home page (`/`) displays woofs from all users.  Use the text area to create and send your own woofs.
+5.  **My Woofs:** Navigate to `/my-woofs` to view and delete your own woofs.
+6.  **Profile:** Navigate to `/profile` to view your profile information and change your password.
+7.  **Logout:** Navigate to `/logout` to log out of the application.
+8.  **Forgot Password:** If you forgot password navigate to `/forgot-password` and follow instructions
+
+## 📄 License
+
+MIT License
+
+```
