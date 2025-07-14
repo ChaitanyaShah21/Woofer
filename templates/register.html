@@ -9,6 +9,8 @@
 {% endblock %}
 
 {% block body %}
+
+     
     <div class="container-fluid d-flex justify-content-center mt-5" >
 
         <img src="/static/woofer.svg" class="rounded float-left img-fluid mr-3" alt="woofer-logo" id="homepage-logo">
@@ -17,6 +19,16 @@
     </div>
 
     <div class="container-fluid d-flex justify-content-center py-5" id="register-form">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category,message in messages %}
+          <div class="alter alert-{{ category }} alter-dismissible fade show" role="alert">
+            {{message}}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}   
     <!-- Register -->
         <div class="card" style="width: 25rem;">
             <ul class="list-group list-group-flush">

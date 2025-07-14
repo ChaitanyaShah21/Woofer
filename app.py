@@ -1,11 +1,13 @@
 import os
-from flask import Flask, flash, redirect, render_template, request, session
+from flask import Flask, flash, redirect, render_template, request, session, url_for
 from flask_session import Session
+from flask_mail import Mail,Message
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from helpers import login_required
 import re
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime,timedelta
 from dotenv import load_dotenv
 
 
@@ -16,7 +18,7 @@ load_dotenv()
 
 # Configure application
 app = Flask(__name__)
-
+app.secret_key = os.getenv("secret_Key")
 # Ensure templates are auto-reloaded
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
@@ -31,6 +33,18 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+# Mail Config
+app.config.update(
+    MAIL_SERVER=os.getenv("MAIL_SERVER"),
+    MAIL_PORT=int(os.getenv("MAIL_PORT")),
+    MAIL_USE_TLS=True,
+    MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
+    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
+
+)
+
+mail = Mail(app)
+serializer = URLSafeTimedSerializer(app.secret_key)
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -39,6 +53,9 @@ class User(db.Model):
     lastName = db.Column(db.Text, nullable=False)
     username = db.Column(db.Text, nullable=False, unique=True)
     hash = db.Column(db.Text, nullable=False)
+    is_verified = db.Column(db.boolean, nullable=False, default=False)
+    reset_token_used = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, defualt=datetime.now(datetime.timezone.utc))
     followers = db.Column(db.Integer, nullable=False, default=0)
     following = db.Column(db.Integer, nullable=False, default=0)
     email = db.Column(db.String(320), nullable=False)
@@ -48,7 +65,7 @@ class Woof(db.Model):
     __tablename__ = 'woofs'
     id = db.Column(db.Integer, primary_key=True)
     woof = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime(timezone=True), nullable=False, default=datetime.now(datetime.timezone.utc))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
 
@@ -127,9 +144,18 @@ def after_request(response):
     return response
 
 
+# delete old unverfied users
 @app.before_request
-def make_session_permanent():
-    session.permanent = True
+def delete_unverified_users():
+    expiry= datetime.now(datetime.timezone.utc) - timedelta(hours=24)
+    unverified = User.query.fliter_by(is_verified=False).filter(User.created_at <expiry).all()
+    for user in unverified:
+        db.session.delete(user)
+    if unverified:
+        db.session.commit()
+    # Make session permanent    
+    session.permanent = True    
+
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -167,19 +193,22 @@ def index():
             return redirect("/")
 
 
-            all_woofs = Woof.query.order_by(Woof.timestamp.desc()).all()
-            woof_data = []
-            for woof in all_woofs:
-                entry = {
-                    'woof': woof.woof,
-                    'timestamp': woof.timestamp,
-                    'username': woof.author.username,
-                    'firstName': woof.author.firstName,
-                    'lastName': woof.author.lastName,
-                }
-                woof_data.append(entry)
-
-            return render_template("index.html", error="", woof_data=woof_data)
+# Verify email
+@app.route("/confirm/<token>")
+def confirm_email(token):
+    try:
+        email = serializer.loads(token, salt="email-confirm", max_age = 3600)
+    except (SignatureExpired, BadSignature):
+        return "Confirmation link is invalid or expired.", 400
+    
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return "user not found", 404
+    
+    user.is_verfied = True
+    db.session.commit()
+    flash("Email verified successfully!", "success")
+    return redirect("/login")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -203,8 +232,84 @@ def login():
             if not user_search or not check_password_hash(user_search.hash, password):
                 error = "Invalid username and/or password"
                 return render_template("login.html", error=error)
+            if not User.is_verfied:
+                error = "Email not verified. Check your inbox for verification mail"
+                return render_template("login.html", error=error)
+
             session["user_id"] = user_search.id
             return redirect("/")
+        
+#forgot password and password reset via email
+@app.route("/forgot-password", methods=["GET","POST"])
+def forgot_password():
+
+    error = ""
+    email = ""
+    if request.method == "POST":
+        email = request.form.get("email")
+
+        if not email:
+            error = "Please enter your email."
+        elif not check_email(email):   
+            error = "Invalid email address."
+
+        if error:
+            return render_template("forgot_password.html", error=error, email=email)     
+
+        user = User.query.filter_by(email=email).first()
+        if(user):
+            user.reset_token_used = False
+            db.session.commit()
+            token = serializer.dumps(email, salt="reset-password")
+            link = url_for("reset_password", token=token, _external=True)
+            msg= Message("woofer Password Reset", recipients=[email])
+            msg.body = f"Click to reset your password:\n{link}\n\nThis link will expire in 1 hour."
+            mail.send(msg)
+        flash("If the email exists, a reset link has been sent.", "info")
+        return redirect("/login")
+    return render_template("forgot_password.html",error=error, email=email)    
+
+
+@app.route("/reset-password/<token>", methods=["POST", "GET"])
+def reset_password(token):
+    try:
+        email = serializer.loads(token, salt="reset=password", max_age=3600)
+    except(SignatureExpired, BadSignature):
+        return "Invalid or expired token", 400
+
+    user = User.query.fiterby(email=email).first()
+    if not user:
+        return "Invalid user", 404
+    
+    if user.reset_token_used:
+        return "This reset link has already been used.", 403
+    
+    error = ""
+    confirm_error = ""
+    if request.method == "POST":
+        new_password = request.form.get("new_password")
+        confirm_password = request.form.get(confirm_password)
+
+        if not new_password:
+            error ="Please enter a new password"    
+
+        elif not check_password(new_password):
+            error = "Password must be atleast 8 characters with 1 each of uppercase, lowercase, number and symbol. " 
+        elif check_password_hash(user.hash, new_password):
+            error = "New password cannot be the same as the old password."
+
+        if not confirm_password or confirm_password != new_password:
+            confirm_error="Passwords do not match."
+        if error or confirm_error:
+            return render_template("reset_password.html",token=token,error=error, confirm_error=confirm_error)        
+
+        user.hash = generate_password_hash(new_password)
+        user.reset_token_used =True
+        db.session.commit()
+        flash("Password successfully reset!", "success")
+        return redirect("/login")
+    
+    return render_template("reset_password.html", token=token, error=error)
 
 
 @app.route("/logout")
@@ -366,6 +471,13 @@ def register():
                 username=username, email=email, hash=generate_password_hash(password))
             db.session.add(new_user)
             db.session.commit()
+
+            token = serializer.dumps(email, salt='email-confirm')
+            link = url_for('confirm_email', token=token, _external=True)
+            msg = Message("Verify your Woofer Account", recipients=[email])
+            msg.body = f"Hi {first_name}, \\nClick to verify your email:\\n{link}\\nExpires in 1 hour."
+            mail.send(msg)
+            flash("Verification link sent to your email.", "info")
             return redirect("/login")
         
 
