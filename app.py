@@ -7,6 +7,7 @@ from helpers import login_required
 import re
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
 from datetime import datetime,timedelta,timezone
 from dotenv import load_dotenv
 
@@ -222,7 +223,7 @@ def login():
 
     elif request.method == "POST":
         session.clear()
-        username = request.form.get("username")
+        username = request.form.get("username").lower()
         password = request.form.get("password")
 
         if not username or not password:
@@ -230,7 +231,7 @@ def login():
             return render_template("login.html", error=error)
 
         else:
-            user_search = User.query.filter_by(username=username).first()
+            user_search = User.query.filter(func.lower(User.username)==username).first()
             if not user_search or not check_password_hash(user_search.hash, password):
                 error = "Invalid username and/or password"
                 return render_template("login.html", error=error)
@@ -412,7 +413,7 @@ def register():
 
         first_name = request.form.get("firstName")
         last_name = request.form.get("lastName")
-        username = request.form.get("username")
+        username = request.form.get("username").lower()
         email = request.form.get("registerEmail")
         password = request.form.get("password")
 
@@ -432,7 +433,7 @@ def register():
             uname = "is-invalid"
             uname_error = "Required."
         else:
-            user_search = User.query.filter_by(username=username).first()
+            user_search = User.query.filter=(func.lower(User.username)==username).first()
             if user_search:
                 uname = "is-invalid"
                 uname_error = "Username already taken!"
