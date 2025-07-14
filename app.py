@@ -265,7 +265,8 @@ def forgot_password():
             token = serializer.dumps(email, salt="reset-password")
             link = url_for("reset_password", token=token, _external=True)
             msg= Message("Woofer Password Reset", recipients=[email])
-            msg.body = f""""Hi {user.firstName}
+            msg.body = f"""
+            Hi {user.firstName}
             Click to reset your password:
             {link}
             This link will expire in 1 hour."""
@@ -483,7 +484,8 @@ def register():
             token = serializer.dumps(email, salt='email-confirm')
             link = url_for('confirm_email', token=token, _external=True)
             msg = Message("Verify your Woofer Account", recipients=[email])
-            msg.body = f"""Hi {first_name},
+            msg.body = f"""
+            Hi {first_name},
             Click to verify your email:
             {link}
             Expires in 1 hour."""
