@@ -7,7 +7,7 @@ from helpers import login_required
 import re
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime,timedelta
+from datetime import datetime,timedelta,timezone
 from dotenv import load_dotenv
 
 
@@ -18,7 +18,7 @@ load_dotenv()
 
 # Configure application
 app = Flask(__name__)
-app.secret_key = os.getenv("secret_Key")
+app.secret_key = os.getenv("SECRET_KEY")
 # Ensure templates are auto-reloaded
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
@@ -39,6 +39,7 @@ app.config.update(
     MAIL_PORT=int(os.getenv("MAIL_PORT")),
     MAIL_USE_TLS=True,
     MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
+    MAIL_DEFAULT_SENDER=os.getenv("MAIL_DEFAULT_SENDER"),
     MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
 
 )
@@ -53,9 +54,9 @@ class User(db.Model):
     lastName = db.Column(db.Text, nullable=False)
     username = db.Column(db.Text, nullable=False, unique=True)
     hash = db.Column(db.Text, nullable=False)
-    is_verified = db.Column(db.boolean, nullable=False, default=False)
+    is_verified = db.Column(db.Boolean, nullable=False, default=False)
     reset_token_used = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, defualt=datetime.now(datetime.timezone.utc))
+    created_at = db.Column(db.DateTime, default=lambda:datetime.now(timezone.utc))
     followers = db.Column(db.Integer, nullable=False, default=0)
     following = db.Column(db.Integer, nullable=False, default=0)
     email = db.Column(db.String(320), nullable=False)
@@ -65,7 +66,7 @@ class Woof(db.Model):
     __tablename__ = 'woofs'
     id = db.Column(db.Integer, primary_key=True)
     woof = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime(timezone=True), nullable=False, default=datetime.now(datetime.timezone.utc))
+    timestamp = db.Column(db.DateTime(timezone=True), nullable=False, default=lambda:datetime.now(timezone.utc))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
 
@@ -144,11 +145,11 @@ def after_request(response):
     return response
 
 
-# delete old unverfied users
+# delete old unverified users
 @app.before_request
 def delete_unverified_users():
-    expiry= datetime.now(datetime.timezone.utc) - timedelta(hours=24)
-    unverified = User.query.fliter_by(is_verified=False).filter(User.created_at <expiry).all()
+    expiry= datetime.now(timezone.utc) - timedelta(hours=24)
+    unverified = User.query.filter_by(is_verified=False).filter(User.created_at <expiry).all()
     for user in unverified:
         db.session.delete(user)
     if unverified:
@@ -205,7 +206,7 @@ def confirm_email(token):
     if not user:
         return "user not found", 404
     
-    user.is_verfied = True
+    user.is_verified = True
     db.session.commit()
     flash("Email verified successfully!", "success")
     return redirect("/login")
@@ -232,7 +233,7 @@ def login():
             if not user_search or not check_password_hash(user_search.hash, password):
                 error = "Invalid username and/or password"
                 return render_template("login.html", error=error)
-            if not User.is_verfied:
+            if not user_search.is_verified:
                 error = "Email not verified. Check your inbox for verification mail"
                 return render_template("login.html", error=error)
 
@@ -263,7 +264,10 @@ def forgot_password():
             token = serializer.dumps(email, salt="reset-password")
             link = url_for("reset_password", token=token, _external=True)
             msg= Message("woofer Password Reset", recipients=[email])
-            msg.body = f"Click to reset your password:\n{link}\n\nThis link will expire in 1 hour."
+            msg.body = f""""
+            Click to reset your password:
+            {link}
+            This link will expire in 1 hour."""
             mail.send(msg)
         flash("If the email exists, a reset link has been sent.", "info")
         return redirect("/login")
@@ -277,7 +281,7 @@ def reset_password(token):
     except(SignatureExpired, BadSignature):
         return "Invalid or expired token", 400
 
-    user = User.query.fiterby(email=email).first()
+    user = User.query.filter_by(email=email).first()
     if not user:
         return "Invalid user", 404
     
@@ -288,7 +292,7 @@ def reset_password(token):
     confirm_error = ""
     if request.method == "POST":
         new_password = request.form.get("new_password")
-        confirm_password = request.form.get(confirm_password)
+        confirm_password = request.form.get("confirm_password")
 
         if not new_password:
             error ="Please enter a new password"    
@@ -410,6 +414,9 @@ def register():
         email = request.form.get("registerEmail")
         password = request.form.get("password")
 
+        fname = lname = uname = pword = mail_status = "is-valid"
+        uname_error = email_error = ""
+
         if not first_name or not first_name.isalpha():
             fname = "is-invalid"
         else:
@@ -431,15 +438,15 @@ def register():
                 uname = "is-valid"
                 uname_error = ""
         if not email or not check_email(email):
-            mail = "is-invalid"
+            mail_status = "is-invalid"
             email_error = "Please enter a valid email address."
         else:
             email_search = User.query.filter_by(email=email).first()
             if email_search:
-                mail = "is-invalid"
+                mail_status = "is-invalid"
                 email_error = "Email already linked to an existing account."
             else:
-                mail = "is-valid"
+                mail_status = "is-valid"
                 email_error = ""
         if not password or not check_password(password):
             pword = "is-invalid"
@@ -455,7 +462,7 @@ def register():
             'uname': uname,
             'username': username,
             'uname_error': uname_error,
-            'mail': mail,
+            'mail': mail_status,
             'email_error': email_error,
             'email': email,
             'pword': pword,
@@ -475,7 +482,10 @@ def register():
             token = serializer.dumps(email, salt='email-confirm')
             link = url_for('confirm_email', token=token, _external=True)
             msg = Message("Verify your Woofer Account", recipients=[email])
-            msg.body = f"Hi {first_name}, \\nClick to verify your email:\\n{link}\\nExpires in 1 hour."
+            msg.body = f"""Hi {first_name},
+            Click to verify your email:
+            {link}
+            Expires in 1 hour."""
             mail.send(msg)
             flash("Verification link sent to your email.", "info")
             return redirect("/login")
@@ -498,7 +508,7 @@ def delete_woof():
 
 if __name__ == '__main__':
     app.run(
-        # host='127.0.0.1',
-        # port=5001,
-        # debug=True
+        host='127.0.0.1',
+        port=5001,
+        debug=True
     )
