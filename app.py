@@ -214,13 +214,14 @@ def confirm_email(token):
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    session.clear()
+    
     """Log user in"""
     if request.method == "GET":
 
         return render_template("login.html", error="")
 
     elif request.method == "POST":
+        session.clear()
         username = request.form.get("username")
         password = request.form.get("password")
 
