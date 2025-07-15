@@ -249,7 +249,7 @@ def forgot_password():
     error = ""
     email = ""
     if request.method == "POST":
-        email = request.form.get("email")
+        email = request.form.get("email").lower()
 
         if not email:
             error = "Please enter your email."
@@ -259,7 +259,7 @@ def forgot_password():
         if error:
             return render_template("forgot_password.html", error=error, email=email)     
 
-        user = User.query.filter_by(email=email).first()
+        user = User.query.filter(func.lower(User.email)==email).first()
         if(user):
             user.reset_token_used = False
             db.session.commit()
@@ -284,7 +284,7 @@ def reset_password(token):
     except(SignatureExpired, BadSignature):
         return "Invalid or expired token", 400
 
-    user = User.query.filter_by(email=email).first()
+    user = User.query.filter(func.lower(User.email)==email).first()
     if not user:
         return "Invalid user", 404
     
@@ -389,6 +389,7 @@ def profile():
         flash("Password successfully updated!", "success")
         return redirect("/profile")
 
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     session.clear()
@@ -414,7 +415,7 @@ def register():
         first_name = request.form.get("firstName")
         last_name = request.form.get("lastName")
         username = request.form.get("username").lower()
-        email = request.form.get("registerEmail")
+        email = request.form.get("registerEmail").lower()
         password = request.form.get("password")
 
         fname = lname = uname = pword = mail_status = "is-valid"
@@ -444,7 +445,7 @@ def register():
             mail_status = "is-invalid"
             email_error = "Please enter a valid email address."
         else:
-            email_search = User.query.filter_by(email=email).first()
+            email_search = User.query.filter(func.lower(User.email)==email).first()
             if email_search:
                 mail_status = "is-invalid"
                 email_error = "Email already linked to an existing account."
@@ -478,7 +479,7 @@ def register():
         else:
             password_hash = generate_password_hash(password)
             new_user = User(firstName=first_name, lastName=last_name,
-                username=username, email=email, hash=generate_password_hash(password))
+                username=username, email=email, hash=password_hash)
             db.session.add(new_user)
             db.session.commit()
 
