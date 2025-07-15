@@ -3,6 +3,10 @@ body
     background-color: #F1F6F5;
 }
 
+.col.overflow-auto {
+    scroll-behavior: smooth;
+}
+
 .credits
 {
     color: black;
@@ -15,6 +19,9 @@ body
     color:red;
 }
 
+html, body {
+    height: 100%;
+}
 
 .nav-link
 {
@@ -26,11 +33,6 @@ body
     color: #ffaa00;
 }
 
-
-.sidebar
-{
-    background-color: #FFD8A9;
-}
 
 .success
 {
@@ -61,6 +63,13 @@ body
   font-size: 1.5rem;
   min-height: 6rem;
   resize: none;
+}
+
+.sidebar {
+    background-color: #FFD8A9;
+    height: 100vh;
+    overflow: hidden;
+    position: sticky;
 }
 
 .nav-link.active {
