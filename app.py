@@ -433,7 +433,7 @@ def register():
             uname = "is-invalid"
             uname_error = "Required."
         else:
-            user_search = User.query.filter=(func.lower(User.username)==username).first()
+            user_search = User.query.filter(func.lower(User.username)==username).first()
             if user_search:
                 uname = "is-invalid"
                 uname_error = "Username already taken!"
