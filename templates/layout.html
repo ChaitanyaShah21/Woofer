@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
   <head>
     <!-- Required meta tags -->
     <meta charset="utf-8">
@@ -13,11 +13,19 @@
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch&family=Titillium+Web&display=swap');
     </style>
+    <script>
+      (() => {
+        const storedTheme = localStorage.getItem("theme") || "light";
+        document.documentElement.setAttribute("data-bs-theme", storedTheme);
+      })();
+    </script>
 
     {% block head %}{% endblock %}
     <title>Woofer – {% block title %}{% endblock %}</title>
   </head>
-  <body class="bg-light">
+  <body class="text-body">
+
+
     <div class="container-fluid">
     <!-- Content here -->
       {% block body %}{% endblock %}
@@ -36,7 +44,19 @@
       </p>
     </div>
   </footer>
+  <!-- NEW FLOATING TOGGLE BUTTON Mobile (like after login) -->
+  <div id="theme-toggle-float" class="d-md-none">
+    <button id="theme-toggle-mobile" class="btn btn-outline-secondary btn-sm" aria-label="Toggle dark mode">
+      <i class="bi bi-moon-fill" id="theme-icon-mobile"></i>
+    </button>
+  </div>
 
+  <!-- Desktop: bottom left -->
+  <div class="d-none d-md-block position-fixed" style="bottom: 1.5rem; left: 1.5rem; z-index: 1050;">
+    <button id="theme-toggle" class="btn btn-outline-secondary btn-sm" aria-label="Toggle dark mode">
+      <i class="bi bi-moon-fill" id="theme-icon"></i>
+    </button>
+  </div>
   <script>
       function myFunction() {
         var x = document.getElementById("password");
@@ -47,5 +67,6 @@
         }
       }
   </script>
+  <script src="/static/darkmode.js" defer></script>
   </body>
 </html>

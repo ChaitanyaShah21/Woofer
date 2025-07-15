@@ -37,7 +37,7 @@
                     <form action="/register" method="post" class="needs-validation" id="register" autocomplete="off" novalidate>
                           <div class="input-group">
                               <div class="form-floating mb-3">
-                                <input type="text" class="form-control {{data['fname']}}" id="firstName" name="firstName" placeholder="First Name" value="{{data['first_name']}}" required>
+                                <input type="text" class="form-control {{data['fname']}}" id="firstName" name="firstName" placeholder=" " value="{{data['first_name']}}" required>
                                 <label for="firstName">First Name</label>
                                 <div class="valid-feedback">
                                   Looks good!
@@ -47,7 +47,7 @@
                                 </div>
                               </div>
                               <div class="form-floating mb-3">
-                                <input type="text" class="form-control {{data['lname']}}" id="lastName" name="lastName" placeholder="Last Name" value="{{data['last_name']}}" required>
+                                <input type="text" class="form-control {{data['lname']}}" id="lastName" name="lastName" placeholder=" " value="{{data['last_name']}}" required>
                                 <label for="lastName">Last Name</label>
                                 <div class="valid-feedback">
                                   Looks good!
@@ -59,7 +59,7 @@
                           </div>
 
                           <div class="form-floating mb-3">
-                            <input type="text" class="form-control {{data['uname']}}" id="username" name="username" placeholder="Username" value="{{data['username']}}" required>
+                            <input type="text" class="form-control {{data['uname']}}" id="username" name="username" placeholder=" " value="{{data['username']}}" required>
                             <label for="username">@Username</label>
                             <div class="valid-feedback">
                               Looks good!
@@ -70,7 +70,7 @@
                           </div>
 
                           <div class="form-floating mb-3">
-                            <input type="email" class="form-control {{data['mail']}}" id="registerEmail" name="registerEmail" placeholder="name@example.com" value="{{data['email']}}" required>
+                            <input type="email" class="form-control {{data['mail']}}" id="registerEmail" name="registerEmail" placeholder=" " value="{{data['email']}}" required>
                             <label for="registerEmail">Email Address</label>
                             <div class="valid-feedback">
                               Looks good!
@@ -81,9 +81,9 @@
                           </div>
                           <div class="form-floating mb-3">
 
-                            <input type="password" class="form-control {{data['pword']}}" id="password" name="password" placeholder="Password" value="{{data['password']}}" required />
+                            <input type="password" class="form-control {{data['pword']}}" id="password" name="password" placeholder=" " value="{{data['password']}}" required />
                             <label for="password">New Password</label>
-                            <input type="checkbox" onclick="myFunction()">Show Password
+                
 
                             <div class="valid-feedback">
                               Looks good!
@@ -91,6 +91,9 @@
                             <div class="invalid-feedback">
                               Password must contain a minimum of 8 characters, including at least 1 uppercase and lowercase letter, at least 1 number and at least one symbol from _ or @ or $.
                             </div>
+                          </div>
+                          <div class="mb-3">
+                            <input type="checkbox" onclick="myFunction()"> Show Password
                           </div>
                           <div class="d-grid gap-2">
                               <button class="btn btn-dark" type="submit">Sign Up</button>

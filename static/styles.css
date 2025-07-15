@@ -1,45 +1,156 @@
-body
-{
+body {
     margin: 0;
     height: 100%;
 }
 
-a
-{
+a {
     color: black;
     text-decoration: none;
 }
 
-
-form
-{
-    padding: 2rem;
-
+a:hover {
+    color: #ffaa00;
 }
 
-h3
-{
+form {
+    padding: 2rem;
+}
+
+h3 {
     font-family: 'Titillium Web', sans-serif;
 }
 
-.error
-{
-    color:red;
+.error {
+    color: red;
 }
 
-.woofer
-{
+.success {
+    color: green;
+}
+
+.woofer {
     font-family: 'Chakra Petch', sans-serif;
     color: #ffaa00;
 }
 
-#homepage-logo
-{
+#homepage-logo {
     width: 7rem;
 }
 
 input.form-control.is-invalid ~ .toggle-password,
-input.form-control.is-valid ~ .toggle-password 
-{
-  z-index: 5; /* Makes sure it stays clickable & aligned */
+input.form-control.is-valid ~ .toggle-password {
+    z-index: 5;
+}
+
+/* 🌓 Dark Mode Overrides */
+[data-bs-theme="dark"] body {
+    background-color: #121212 !important;
+    color: #e0e0e0;
+}
+
+[data-bs-theme="dark"] .sidebar {
+    background-color: #1e1e1e !important;
+}
+
+[data-bs-theme="dark"] .nav-link {
+    color: #e0e0e0;
+}
+
+[data-bs-theme="dark"] .nav-link:hover {
+    color: #ffaa00;
+}
+
+[data-bs-theme="dark"] .credits,
+[data-bs-theme="dark"] .credits a {
+    color: #bdbdbd !important;
+}
+
+[data-bs-theme="dark"] .woof {
+    background-color: #ffaa00;
+    color: #1e1e1e;
+}
+
+[data-bs-theme="dark"] .woof:hover {
+    background-color: #F49D1A;
+    color: #000;
+}
+
+[data-bs-theme="dark"] .form-control {
+    background-color: #1e1e1e !important;
+    color: #f5f5f5 !important;
+    border-color: #444 !important;
+}
+
+[data-bs-theme="dark"] .form-control::placeholder {
+    color: #aaa !important;
+    opacity: 1;
+}
+
+[data-bs-theme="dark"] label,
+[data-bs-theme="dark"] .form-label {
+    color: #ddd !important;
+}
+
+/* ✅ Floating label fix */
+[data-bs-theme="dark"] .form-floating > label {
+    color: #aaa !important;
+    background-color: transparent;
+}
+
+/* Autofill input fields */
+[data-bs-theme="dark"] input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 30px #1e1e1e inset !important;
+    -webkit-text-fill-color: #f5f5f5 !important;
+}
+
+/* Buttons */
+[data-bs-theme="dark"] .btn-outline-secondary,
+[data-bs-theme="dark"] .btn-outline-light {
+    color: #fff;
+    border-color: #888;
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary:hover,
+[data-bs-theme="dark"] .btn-outline-light:hover {
+    background-color: #ffaa00;
+    color: #000;
+    border-color: #ffaa00;
+}
+
+/* Transitions */
+html, body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#theme-icon {
+    transition: transform 0.3s ease;
+}
+
+.bi-sun-fill {
+    transform: rotate(180deg);
+}
+
+/* Floating toggle button on mobile */
+#theme-toggle-float {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 1050;
+}
+
+/* Rotate animation for icon */
+#theme-icon {
+  transition: transform 0.4s ease;
+}
+
+.bi-sun-fill {
+  transform: rotate(180deg);
+}
+
+.rotate {
+  transform: rotate(180deg);
+}
+
+.form-control::placeholder {
+  color: #666;
 }
