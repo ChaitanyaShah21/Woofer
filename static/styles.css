@@ -43,6 +43,15 @@ input.form-control.is-valid ~ .toggle-password {
 }
 
 /* 🌓 Dark Mode Overrides */
+
+[data-bs-theme="dark"] a {
+  color: #e0e0e0;
+}
+
+[data-bs-theme="dark"] a:hover {
+  color: #ffaa00;
+}
+
 [data-bs-theme="dark"] body {
     background-color: #121212 !important;
     color: #e0e0e0;
@@ -73,6 +82,12 @@ input.form-control.is-valid ~ .toggle-password {
 [data-bs-theme="dark"] .woof:hover {
     background-color: #F49D1A;
     color: #000;
+}
+
+[data-bs-theme="dark"] footer,
+[data-bs-theme="dark"] footer a,
+[data-bs-theme="dark"] .text-reset {
+  color: #bdbdbd !important;
 }
 
 [data-bs-theme="dark"] .form-control {
