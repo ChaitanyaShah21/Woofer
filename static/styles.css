@@ -169,3 +169,16 @@ html, body {
 .form-control::placeholder {
   color: #666;
 }
+
+.forgot-link {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.forgot-link:hover {
+  color: #ffaa00;
+}
+
+[data-bs-theme="dark"] .forgot-link {
+  color: #e0e0e0;
+}
