@@ -32,22 +32,26 @@
                             {% endfor %}
                         {% endif %}
                     {% endwith %} 
-                    <form action="/login" method="post" class="needs-validation" id="login">
-                          <div class="form-floating mb-3">
-                            <input type="text" class="form-control" id="username" name="username" placeholder=" ">
-                            <label for="username">Username</label>
-                          </div>
-                          <div class="form-floating mb-3">
-                            <input type="password" class="form-control" id="password" name="password" placeholder=" ">
-                            <label for="password">Password</label>
-                            <input type="checkbox" onclick="myFunction()">Show Password
-                          </div>
-                          <small class="error">
-                              {{error}}
-                          </small>
-                          <div class="d-grid gap-2 mt-3">
-                              <button class="btn btn-primary" type="submit">Log In</button>
-                          </div>
+                    <form action="/login" method="post" class="needs-validation" id="login" novalidate>
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" name="password" placeholder=" " required>
+                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="password">
+                                    <i class="bi bi-eye-slash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <small class="error">
+                            {{error}}
+                        </small>
+                        <div class="d-grid gap-2 mt-3">
+                            <button class="btn btn-primary" type="submit">Log In</button>
+                        </div>
                     </form>
                     <p class="text-center mt-2">
                         <a href="/forgot-password">Forgot your password?</a>

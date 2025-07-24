@@ -23,6 +23,11 @@ html, body {
     height: 100%;
 }
 
+#homepage-logo {
+    width: 4rem;
+    height: auto;
+}
+
 .nav-link
 {
     color: black;
