@@ -13,6 +13,7 @@ Woofer is a microblogging web application built with Flask, SQLAlchemy, and Post
 
 *   **User Authentication:** 🔒 Secure registration and login system with password hashing.
 *   **Email Verification:** ✅ Users must verify their email address upon registration.
+*   **Verification Recovery:** 🔁 Unverified users can request a new verification email from the login page.
 *   **Password Reset:** ✉️ Users can reset their passwords via email.
 *   **Woofing (Posting):** 📝 Users can create and post "woofs" (short messages).
 *   **Woof Display:** 📰 Displays woofs from all users in reverse chronological order.
@@ -124,7 +125,10 @@ python -c "from app import app, db; app.app_context().push(); db.create_all()"
 
 Then open the generated `onrender.com` URL and test registration, email
 verification, login, posting, logout, and password reset. Configure SMTP
-before testing registration or password reset; those flows send email.
+before testing registration or password reset; those flows send email. If
+using Gmail, use an app password rather than the normal account password.
+If an email is not received, use **Resend verification email** on the login
+page and check the Render service logs for SMTP errors.
 
 ## 💻 Usage
 

@@ -1,4 +1,6 @@
 import os
+import smtplib
+import socket
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from flask_mail import Mail,Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
@@ -117,6 +119,18 @@ def check_email(email):
     else:
         return False
 
+
+def send_verification_email(user):
+    token = serializer.dumps(user.email, salt="email-confirm")
+    link = url_for("confirm_email", token=token, _external=True)
+    msg = Message("Verify your Woofer Account", recipients=[user.email])
+    msg.body = f"""
+    Hi {user.firstName},
+    Click to verify your email:
+    {link}
+    Expires in 1 hour."""
+    mail.send(msg)
+
 # Function for validating password acc to:
 #     Minimum 8 characters.
 #     The alphabet must be between [a-z]
@@ -227,6 +241,29 @@ def confirm_email(token):
     user.is_verified = True
     db.session.commit()
     flash("Email verified successfully!", "success")
+    return redirect("/login")
+
+
+@app.route("/resend-verification", methods=["GET", "POST"])
+def resend_verification():
+    if request.method == "GET":
+        return render_template("resend_verification.html", email="")
+
+    email = request.form.get("email", "").strip().lower()
+    if not check_email(email):
+        flash("Please enter a valid email address.", "danger")
+        return render_template("resend_verification.html", email=email), 400
+
+    user = User.query.filter(func.lower(User.email) == email).first()
+    if user and not user.is_verified:
+        try:
+            send_verification_email(user)
+        except (OSError, smtplib.SMTPException, socket.timeout):
+            app.logger.exception("Unable to resend verification email")
+            flash("The verification email could not be sent. Please try again later.", "danger")
+            return redirect("/login")
+
+    flash("If the account is unverified, a new verification link has been sent.", "info")
     return redirect("/login")
 
 
@@ -498,17 +535,16 @@ def register():
             new_user = User(firstName=first_name, lastName=last_name,
                 username=username, email=email, hash=password_hash)
             db.session.add(new_user)
-            db.session.commit()
+            try:
+                db.session.flush()
+                send_verification_email(new_user)
+                db.session.commit()
+            except (OSError, smtplib.SMTPException, socket.timeout):
+                db.session.rollback()
+                app.logger.exception("Unable to send verification email during registration")
+                flash("Your account was not created because the verification email could not be sent. Please try again later.", "danger")
+                return redirect("/register")
 
-            token = serializer.dumps(email, salt='email-confirm')
-            link = url_for('confirm_email', token=token, _external=True)
-            msg = Message("Verify your Woofer Account", recipients=[email])
-            msg.body = f"""
-            Hi {first_name},
-            Click to verify your email:
-            {link}
-            Expires in 1 hour."""
-            mail.send(msg)
             flash("Verification link sent to your email.", "info")
             return redirect("/login")
         
