@@ -122,17 +122,41 @@ def check_email(email):
 
 
 def send_async_email(msg):
-    """Send an email in a background thread so the request doesn't block."""
+    """Send an email in a background thread using smtplib directly (with timeout)."""
     def _send(app_ctx, msg):
         with app_ctx:
-            try:
-                print(f"[EMAIL] Attempting to send email to {msg.recipients}", flush=True)
-                mail.send(msg)
-                print(f"[EMAIL] Successfully sent email to {msg.recipients}", flush=True)
-            except Exception as e:
-                print(f"[EMAIL] FAILED to send email to {msg.recipients}: {type(e).__name__}: {e}", flush=True)
-                import traceback
-                traceback.print_exc()
+            server = app.config['MAIL_SERVER']
+            username = app.config['MAIL_USERNAME']
+            password = app.config['MAIL_PASSWORD']
+            sender = app.config.get('MAIL_DEFAULT_SENDER', username)
+
+            from email.mime.text import MIMEText
+            mime = MIMEText(msg.body)
+            mime['Subject'] = msg.subject
+            mime['From'] = sender
+            mime['To'] = ', '.join(msg.recipients)
+
+            # Try port 465 (SSL) first – many cloud hosts block 587
+            for attempt, (port, use_ssl) in enumerate([(465, True), (587, False)], 1):
+                try:
+                    print(f"[EMAIL] Attempt {attempt}: connecting to {server}:{port} (SSL={use_ssl}) for {msg.recipients}", flush=True)
+                    if use_ssl:
+                        smtp = smtplib.SMTP_SSL(server, port, timeout=30)
+                    else:
+                        smtp = smtplib.SMTP(server, port, timeout=30)
+                        smtp.ehlo()
+                        smtp.starttls()
+                        smtp.ehlo()
+                    smtp.login(username, password)
+                    smtp.sendmail(sender, msg.recipients, mime.as_string())
+                    smtp.quit()
+                    print(f"[EMAIL] Successfully sent email to {msg.recipients} via port {port}", flush=True)
+                    return
+                except Exception as e:
+                    print(f"[EMAIL] Attempt {attempt} FAILED (port {port}): {type(e).__name__}: {e}", flush=True)
+
+            print(f"[EMAIL] All attempts failed for {msg.recipients}", flush=True)
+
     thread = threading.Thread(target=_send, args=(app.app_context(), msg))
     thread.start()
 
