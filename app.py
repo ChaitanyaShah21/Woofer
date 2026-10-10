@@ -1,6 +1,7 @@
 import os
 import smtplib
 import socket
+import threading
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from flask_mail import Mail,Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
@@ -120,6 +121,18 @@ def check_email(email):
         return False
 
 
+def send_async_email(msg):
+    """Send an email in a background thread so the request doesn't block."""
+    def _send(app_ctx, msg):
+        with app_ctx:
+            try:
+                mail.send(msg)
+            except Exception:
+                app.logger.exception("Background email send failed")
+    thread = threading.Thread(target=_send, args=(app.app_context(), msg))
+    thread.start()
+
+
 def send_verification_email(user):
     token = serializer.dumps(user.email, salt="email-confirm")
     link = url_for("confirm_email", token=token, _external=True)
@@ -129,7 +142,7 @@ def send_verification_email(user):
     Click to verify your email:
     {link}
     Expires in 1 hour."""
-    mail.send(msg)
+    send_async_email(msg)
 
 # Function for validating password acc to:
 #     Minimum 8 characters.
@@ -325,12 +338,7 @@ def forgot_password():
             Click to reset your password:
             {link}
             This link will expire in 1 hour."""
-            try:
-                mail.send(msg)
-            except Exception:
-                app.logger.exception("Unable to send password reset email")
-                flash("The password reset email could not be sent. Please try again later.", "danger")
-                return redirect("/login")
+            send_async_email(msg)
         flash("If the email exists, a reset link has been sent.", "info")
         return redirect("/login")
     return render_template("forgot_password.html",error=error, email=email)    
