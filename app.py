@@ -28,9 +28,12 @@ if not secret_key:
 if not database_url:
     raise RuntimeError("DATABASE_URL must be set.")
 
-# Render may provide the legacy postgres:// scheme.
+# Render may provide either postgres:// or postgresql://. Use the driver
+# installed in requirements.txt explicitly.
 if database_url.startswith("postgres://"):
-    database_url = database_url.replace("postgres://", "postgresql://", 1)
+    database_url = database_url.replace("postgres://", "postgresql+psycopg2://", 1)
+elif database_url.startswith("postgresql://"):
+    database_url = database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
 
 app.secret_key = secret_key
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
