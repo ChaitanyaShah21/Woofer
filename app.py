@@ -258,7 +258,7 @@ def resend_verification():
     if user and not user.is_verified:
         try:
             send_verification_email(user)
-        except (OSError, smtplib.SMTPException, socket.timeout):
+        except Exception:
             app.logger.exception("Unable to resend verification email")
             flash("The verification email could not be sent. Please try again later.", "danger")
             return redirect("/login")
@@ -325,7 +325,12 @@ def forgot_password():
             Click to reset your password:
             {link}
             This link will expire in 1 hour."""
-            mail.send(msg)
+            try:
+                mail.send(msg)
+            except Exception:
+                app.logger.exception("Unable to send password reset email")
+                flash("The password reset email could not be sent. Please try again later.", "danger")
+                return redirect("/login")
         flash("If the email exists, a reset link has been sent.", "info")
         return redirect("/login")
     return render_template("forgot_password.html",error=error, email=email)    
@@ -539,7 +544,7 @@ def register():
                 db.session.flush()
                 send_verification_email(new_user)
                 db.session.commit()
-            except (OSError, smtplib.SMTPException, socket.timeout):
+            except Exception:
                 db.session.rollback()
                 app.logger.exception("Unable to send verification email during registration")
                 flash("Your account was not created because the verification email could not be sent. Please try again later.", "danger")
