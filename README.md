@@ -31,6 +31,7 @@ Woofer is a microblogging web application built with Flask, SQLAlchemy, and Post
     *   PostgreSQL 🐘
     *   Flask-Session 🍪
     *   Flask-Mail ✉️
+    *   Brevo API 📬
     *   itsdangerous 🔑
     *   dotenv ⚙️
     *   Werkzeug 🛠️
@@ -105,12 +106,15 @@ In the web service's **Environment** settings, add:
 APP_ENV=production
 SECRET_KEY=<long-random-secret>
 DATABASE_URL=<Internal Database URL copied from the Render PostgreSQL service>
-MAIL_SERVER=<SMTP server>
+BREVO_API_KEY=<Brevo API Key (Recommended for Render free tier)>
+MAIL_SERVER=<SMTP server (Fallback / Paid plans)>
 MAIL_PORT=587
 MAIL_USERNAME=<SMTP username>
 MAIL_PASSWORD=<SMTP password>
 MAIL_DEFAULT_SENDER=<verified sender email>
 ```
+
+> **Note on Email on Render Free Tier:** Render blocks outbound SMTP ports (25, 465, 587) on free tier services. Setting `BREVO_API_KEY` routes email delivery through Brevo's HTTP API (over HTTPS port 443), which works reliably on Render's free tier. Standard SMTP is retained as a fallback.
 
 Use the database service's **Internal Database URL**, not its external URL,
 when the web service and database are in the same Render region. Never commit
@@ -124,11 +128,9 @@ python -c "from app import app, db; app.app_context().push(); db.create_all()"
 ```
 
 Then open the generated `onrender.com` URL and test registration, email
-verification, login, posting, logout, and password reset. Configure SMTP
-before testing registration or password reset; those flows send email. If
-using Gmail, use an app password rather than the normal account password.
-If an email is not received, use **Resend verification email** on the login
-page and check the Render service logs for SMTP errors.
+verification, login, posting, logout, and password reset. If using Brevo, verify your
+sender email in the Brevo dashboard before testing. If an email is not received, use
+**Resend verification email** on the login page and check the Render service logs.
 
 ## 💻 Usage
 
