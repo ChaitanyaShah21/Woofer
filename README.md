@@ -43,7 +43,7 @@ Woofer is a microblogging web application built with Flask, SQLAlchemy, and Post
     *   psycopg2-binary 💿
     *   gunicorn ⚙️
 
-## ⚙️ Setup Instructions
+## ⚙️ Local Setup
 
 1.  **Clone the repository:**
     ```bash
@@ -63,18 +63,7 @@ Woofer is a microblogging web application built with Flask, SQLAlchemy, and Post
     ```
 
 4.  **Set up environment variables:**
-    *   Create a `.env` file in the root directory.
-    *   Add the following environment variables, replacing the values with your actual credentials:
-
-        ```
-        SECRET_KEY="your_secret_key"
-        DATABASE_URL="your_postgresql_connection_string"
-        MAIL_SERVER="your_mail_server"
-        MAIL_PORT="your_mail_port"
-        MAIL_USERNAME="your_mail_username"
-        MAIL_PASSWORD="your_mail_password"
-        MAIL_DEFAULT_SENDER="your_mail_sender"
-        ```
+    *   Copy `.env.example` to `.env` and replace every placeholder.
     *   Ensure your PostgreSQL database is running and accessible.
 
 5.  **Initialize the database:**
@@ -98,6 +87,44 @@ Woofer is a microblogging web application built with Flask, SQLAlchemy, and Post
      ```bash
     gunicorn --bind 0.0.0.0:5000 app:app
     ```
+
+## 🚀 Deploy on Render
+
+Create the PostgreSQL database and web service in Render, then configure the web
+service as follows:
+
+* **Runtime:** Python 3
+* **Build Command:** `pip install -r requirements.txt`
+* **Start Command:** `gunicorn --bind 0.0.0.0:$PORT app:app`
+* **Health Check Path:** `/login`
+
+In the web service's **Environment** settings, add:
+
+```
+APP_ENV=production
+SECRET_KEY=<long-random-secret>
+DATABASE_URL=<Internal Database URL copied from the Render PostgreSQL service>
+MAIL_SERVER=<SMTP server>
+MAIL_PORT=587
+MAIL_USERNAME=<SMTP username>
+MAIL_PASSWORD=<SMTP password>
+MAIL_DEFAULT_SENDER=<verified sender email>
+```
+
+Use the database service's **Internal Database URL**, not its external URL,
+when the web service and database are in the same Render region. Never commit
+these values or a `.env` file.
+
+After the first successful deploy, initialize the tables once from the Render
+web service's shell:
+
+```bash
+python -c "from app import app, db; app.app_context().push(); db.create_all()"
+```
+
+Then open the generated `onrender.com` URL and test registration, email
+verification, login, posting, logout, and password reset. Configure SMTP
+before testing registration or password reset; those flows send email.
 
 ## 💻 Usage
 
