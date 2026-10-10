@@ -126,9 +126,13 @@ def send_async_email(msg):
     def _send(app_ctx, msg):
         with app_ctx:
             try:
+                print(f"[EMAIL] Attempting to send email to {msg.recipients}", flush=True)
                 mail.send(msg)
-            except Exception:
-                app.logger.exception("Background email send failed")
+                print(f"[EMAIL] Successfully sent email to {msg.recipients}", flush=True)
+            except Exception as e:
+                print(f"[EMAIL] FAILED to send email to {msg.recipients}: {type(e).__name__}: {e}", flush=True)
+                import traceback
+                traceback.print_exc()
     thread = threading.Thread(target=_send, args=(app.app_context(), msg))
     thread.start()
 
