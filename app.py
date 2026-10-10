@@ -2,6 +2,9 @@ import os
 import smtplib
 import socket
 import threading
+import json
+import urllib.request
+import urllib.error
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from flask_mail import Mail,Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
@@ -122,13 +125,51 @@ def check_email(email):
 
 
 def send_async_email(msg):
-    """Send an email in a background thread using smtplib directly (with timeout)."""
+    """Send an email in a background thread using Brevo API if available, else SMTP."""
     def _send(app_ctx, msg):
         with app_ctx:
-            server = app.config['MAIL_SERVER']
-            username = app.config['MAIL_USERNAME']
-            password = app.config['MAIL_PASSWORD']
-            sender = app.config.get('MAIL_DEFAULT_SENDER', username)
+            sender = app.config.get('MAIL_DEFAULT_SENDER') or os.getenv('MAIL_USERNAME') or 'csharp9221@gmail.com'
+            brevo_api_key = os.getenv('BREVO_API_KEY')
+
+            # 1. Use Brevo HTTP API (Port 443) - works on Render without SMTP port blocks
+            if brevo_api_key:
+                try:
+                    print(f"[EMAIL] Sending via Brevo API to {msg.recipients}", flush=True)
+                    url = 'https://api.brevo.com/v3/smtp/email'
+                    headers = {
+                        'accept': 'application/json',
+                        'api-key': brevo_api_key,
+                        'content-type': 'application/json',
+                    }
+                    data = {
+                        'sender': {'name': 'Woofer', 'email': sender},
+                        'to': [{'email': r} for r in msg.recipients],
+                        'subject': msg.subject,
+                        'textContent': msg.body,
+                    }
+                    req = urllib.request.Request(
+                        url,
+                        data=json.dumps(data).encode('utf-8'),
+                        headers=headers,
+                        method='POST',
+                    )
+                    with urllib.request.urlopen(req, timeout=15) as resp:
+                        print(f"[EMAIL] Successfully sent email to {msg.recipients} via Brevo API (status {resp.status})", flush=True)
+                        return
+                except urllib.error.HTTPError as e:
+                    err_msg = e.read().decode('utf-8', errors='ignore')
+                    print(f"[EMAIL] Brevo API HTTPError {e.code}: {err_msg}", flush=True)
+                except Exception as e:
+                    print(f"[EMAIL] Brevo API failed: {type(e).__name__}: {e}", flush=True)
+
+            # 2. Fallback to SMTP if Brevo is not configured or fails
+            server = app.config.get('MAIL_SERVER')
+            username = app.config.get('MAIL_USERNAME')
+            password = app.config.get('MAIL_PASSWORD')
+
+            if not server or not username or not password:
+                print(f"[EMAIL] No SMTP fallback available for {msg.recipients}", flush=True)
+                return
 
             from email.mime.text import MIMEText
             mime = MIMEText(msg.body)
@@ -136,7 +177,6 @@ def send_async_email(msg):
             mime['From'] = sender
             mime['To'] = ', '.join(msg.recipients)
 
-            # Try port 465 (SSL) first – many cloud hosts block 587
             for attempt, (port, use_ssl) in enumerate([(465, True), (587, False)], 1):
                 try:
                     print(f"[EMAIL] Attempt {attempt}: connecting to {server}:{port} (SSL={use_ssl}) for {msg.recipients}", flush=True)
@@ -155,7 +195,7 @@ def send_async_email(msg):
                 except Exception as e:
                     print(f"[EMAIL] Attempt {attempt} FAILED (port {port}): {type(e).__name__}: {e}", flush=True)
 
-            print(f"[EMAIL] All attempts failed for {msg.recipients}", flush=True)
+            print(f"[EMAIL] All email sending methods failed for {msg.recipients}", flush=True)
 
     thread = threading.Thread(target=_send, args=(app.app_context(), msg))
     thread.start()
