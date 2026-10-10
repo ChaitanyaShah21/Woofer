@@ -1,6 +1,5 @@
 import os
 from flask import Flask, flash, redirect, render_template, request, session, url_for
-from flask_session import Session
 from flask_mail import Mail,Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from helpers import login_required
@@ -10,6 +9,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
 from datetime import datetime,timedelta,timezone
 from dotenv import load_dotenv
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 
 
@@ -19,25 +19,39 @@ load_dotenv()
 
 # Configure application
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY")
+secret_key = os.getenv("SECRET_KEY")
+database_url = os.getenv("DATABASE_URL")
+mail_port = os.getenv("MAIL_PORT", "587")
+
+if not secret_key:
+    raise RuntimeError("SECRET_KEY must be set.")
+if not database_url:
+    raise RuntimeError("DATABASE_URL must be set.")
+
+# Render may provide the legacy postgres:// scheme.
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.secret_key = secret_key
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 # Ensure templates are auto-reloaded
-app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["TEMPLATES_AUTO_RELOAD"] = os.getenv("APP_ENV") != "production"
 
-# Configure session to use filesystem (instead of signed cookies)
+# Use Flask's signed cookie sessions so sessions survive Render restarts and
+# do not depend on Render's ephemeral filesystem.
 app.config["SESSION_PERMANENT"] = True
-app.config["SESSION_TYPE"] = "filesystem"
-Session(app)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = os.getenv("APP_ENV") == "production"
 
-# use render postgres
-
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # Mail Config
 app.config.update(
     MAIL_SERVER=os.getenv("MAIL_SERVER"),
-    MAIL_PORT=int(os.getenv("MAIL_PORT")),
+    MAIL_PORT=int(mail_port),
     MAIL_USE_TLS=True,
     MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
     MAIL_DEFAULT_SENDER=os.getenv("MAIL_DEFAULT_SENDER"),
@@ -473,7 +487,7 @@ def register():
             'password': password,
         }
 
-        if fname == 'is-invalid' or lname == 'is-invalid' or uname == 'is-invalid' or mail == 'is-invalid' or pword == 'is-invalid':
+        if fname == 'is-invalid' or lname == 'is-invalid' or uname == 'is-invalid' or mail_status == 'is-invalid' or pword == 'is-invalid':
 
             return render_template("register.html", data=register_data)
         else:
