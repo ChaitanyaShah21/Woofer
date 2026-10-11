@@ -86,4 +86,13 @@ def test_login_rate_limiting(app):
         app.config["RATELIMIT_ENABLED"] = False
 
 
+def test_defensive_http_headers(client):
+    """HTTP responses include X-Content-Type-Options, X-Frame-Options, and Content-Security-Policy."""
+    response = client.get("/login")
+    assert response.headers.get("X-Content-Type-Options") == "nosniff"
+    assert response.headers.get("X-Frame-Options") == "DENY"
+    assert "default-src 'self'" in response.headers.get("Content-Security-Policy", "")
+
+
+
 
