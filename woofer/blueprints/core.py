@@ -1,6 +1,7 @@
 """Core blueprint: health check endpoint and error handlers."""
-from flask import Blueprint, jsonify, render_template
+from flask import Blueprint, current_app, jsonify, render_template
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 
 from woofer.extensions import db
 
@@ -42,3 +43,15 @@ def not_found(error):
 @core_bp.app_errorhandler(500)
 def internal_server_error(error):
     return render_template("layout.html", error_message="Internal Server Error"), 500
+
+
+@core_bp.app_errorhandler(OperationalError)
+def handle_db_operational_error(error):
+    current_app.logger.critical("Database operational failure: %s", error)
+    return (
+        render_template(
+            "layout.html",
+            error_message="The database is temporarily unavailable. Please retry in a moment.",
+        ),
+        503,
+    )

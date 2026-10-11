@@ -1,5 +1,6 @@
 import os
 from datetime import timedelta
+from typing import Any, ClassVar
 
 from dotenv import load_dotenv
 
@@ -50,6 +51,15 @@ class Config:
     RATELIMIT_ENABLED = True
     RATELIMIT_STORAGE_URI = "memory://"
 
+    # Connection Pool Settings
+    SQLALCHEMY_ENGINE_OPTIONS: ClassVar[dict[str, Any]] = {
+        "pool_pre_ping": True,
+        "pool_size": 5,
+        "max_overflow": 10,
+        "pool_timeout": 30,
+        "pool_recycle": 1800,
+    }
+
 
 class DevelopmentConfig(Config):
     """Development environment configuration."""
@@ -61,6 +71,7 @@ class TestingConfig(Config):
     """Isolated testing environment configuration."""
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_ENGINE_OPTIONS: ClassVar[dict[str, Any]] = {}
     WTF_CSRF_ENABLED = False
     SESSION_COOKIE_SECURE = False
     RATELIMIT_ENABLED = False

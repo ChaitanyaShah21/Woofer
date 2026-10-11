@@ -21,3 +21,9 @@ def test_health_check_unhealthy(client):
         data = response.get_json()
         assert data["status"] == "unhealthy"
         assert data["database"] == "disconnected"
+
+
+def test_pool_pre_ping_enabled_in_production(app):
+    """Verify pool_pre_ping is active in production configuration."""
+    from woofer.config import ProductionConfig
+    assert ProductionConfig.SQLALCHEMY_ENGINE_OPTIONS.get("pool_pre_ping") is True
