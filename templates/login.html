@@ -42,7 +42,7 @@
                             <label for="password" class="form-label">Password</label>
                             <div class="input-group">
                                 <input type="password" class="form-control" id="password" name="password" placeholder=" " required>
-                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="password">
+                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="password" aria-label="Toggle password visibility">
                                     <i class="bi bi-eye-slash"></i>
                                 </button>
                             </div>
@@ -51,7 +51,7 @@
                             {{error}}
                         </small>
                         <div class="d-grid gap-2 mt-3">
-                            <button class="btn btn-primary" type="submit">Log In</button>
+                            <button class="btn btn-woofer" type="submit">Log In</button>
                         </div>
                     </form>
                     <p class="text-center mt-2">
@@ -64,8 +64,7 @@
         <!-- Register Button-->
                 <li class="list-group-item">
                     <div class="d-grid gap-2">
-                        <a type="button" class="btn btn-dark" href="/register">
-                              Create New Account</a>
+                        <a class="btn btn-outline-woofer" href="/register">Create New Account</a>
                     </div>
                 </li>
               </ul>

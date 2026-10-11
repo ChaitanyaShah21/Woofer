@@ -38,18 +38,28 @@
             <form action="/profile" method="post" class="needs-validation" id="change_password" autocomplete="off">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                  <div class="form-floating mb-3">
-                    <input type="password" autocomplete="new-password" class="form-control" id="old_password" name="old_password" placeholder="Old Password">
-                    <label for="old_password">Old Password</label>
+                  <div class="mb-3">
+                    <label for="old_password" class="form-label">Old Password</label>
+                    <div class="input-group">
+                      <input type="password" autocomplete="current-password" class="form-control" id="old_password" name="old_password" placeholder="Old Password" required>
+                      <button class="btn btn-outline-secondary toggle-password" type="button" data-target="old_password" aria-label="Toggle password visibility">
+                        <i class="bi bi-eye-slash"></i>
+                      </button>
+                    </div>
                   </div>
 
-                  <div class="form-floating mb-3">
-                    <input type="password" autocomplete="new-password" class="form-control" id="new_password" name="new_password" placeholder="New Password">
-                    <label for="new_password">New Password</label>
+                  <div class="mb-3">
+                    <label for="new_password" class="form-label">New Password</label>
+                    <div class="input-group">
+                      <input type="password" autocomplete="new-password" class="form-control" id="new_password" name="new_password" placeholder="New Password" required>
+                      <button class="btn btn-outline-secondary toggle-password" type="button" data-target="new_password" aria-label="Toggle password visibility">
+                        <i class="bi bi-eye-slash"></i>
+                      </button>
+                    </div>
                   </div>
 
                   <div class="d-grid gap-2 mt-3">
-                      <button class="btn btn-primary" type="submit">Change Password</button>
+                      <button class="btn btn-woofer" type="submit">Change Password</button>
                   </div>
             </form>
         </div>

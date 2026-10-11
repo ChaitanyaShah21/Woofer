@@ -42,6 +42,90 @@ input.form-control.is-valid ~ .toggle-password {
     z-index: 5;
 }
 
+/* Woofer Brand Buttons */
+.btn-woofer {
+    background-color: #ffaa00;
+    border-color: #ffaa00;
+    color: #ffffff;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-woofer:hover,
+.btn-woofer:focus,
+.btn-woofer:active {
+    background-color: #f49d1a;
+    border-color: #f49d1a;
+    color: #ffffff;
+    box-shadow: 0 0 0 0.25rem rgba(255, 170, 0, 0.35);
+}
+
+.btn-outline-woofer {
+    background-color: transparent;
+    border: 1.5px solid #ffaa00;
+    color: #ffaa00;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-outline-woofer:hover,
+.btn-outline-woofer:focus,
+.btn-outline-woofer:active {
+    background-color: #ffaa00;
+    border-color: #ffaa00;
+    color: #ffffff;
+    box-shadow: 0 0 0 0.25rem rgba(255, 170, 0, 0.35);
+}
+
+/* Global Bootstrap Primary Override to enforce brand consistency */
+.btn-primary {
+    background-color: #ffaa00;
+    border-color: #ffaa00;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: #f49d1a !important;
+    border-color: #f49d1a !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 0 0.25rem rgba(255, 170, 0, 0.35) !important;
+}
+
+/* Form Controls & Password Toggle */
+.form-control:focus {
+    border-color: #ffaa00;
+    box-shadow: 0 0 0 0.25rem rgba(255, 170, 0, 0.25);
+}
+
+.toggle-password {
+    border-color: #ced4da;
+    color: #6c757d;
+}
+
+.toggle-password:hover,
+.toggle-password:focus {
+    color: #ffaa00;
+    border-color: #ffaa00;
+}
+
+/* Pagination */
+.page-item.active .page-link {
+    background-color: #ffaa00;
+    border-color: #ffaa00;
+    color: #ffffff;
+}
+
+.page-link {
+    color: #ffaa00;
+}
+
+.page-link:hover {
+    color: #f49d1a;
+}
+
 /* 🌓 Dark Mode Overrides */
 
 [data-bs-theme="dark"] a {
@@ -119,6 +203,61 @@ input.form-control.is-valid ~ .toggle-password {
 }
 
 /* Buttons */
+[data-bs-theme="dark"] .btn-woofer {
+    background-color: #ffaa00;
+    border-color: #ffaa00;
+    color: #121212;
+    font-weight: 600;
+}
+
+[data-bs-theme="dark"] .btn-woofer:hover,
+[data-bs-theme="dark"] .btn-woofer:focus,
+[data-bs-theme="dark"] .btn-woofer:active {
+    background-color: #f49d1a;
+    border-color: #f49d1a;
+    color: #000000;
+    box-shadow: 0 0 0 0.25rem rgba(255, 170, 0, 0.35);
+}
+
+[data-bs-theme="dark"] .btn-outline-woofer {
+    border-color: #ffaa00;
+    color: #ffaa00;
+}
+
+[data-bs-theme="dark"] .btn-outline-woofer:hover,
+[data-bs-theme="dark"] .btn-outline-woofer:focus,
+[data-bs-theme="dark"] .btn-outline-woofer:active {
+    background-color: #ffaa00;
+    border-color: #ffaa00;
+    color: #121212;
+    box-shadow: 0 0 0 0.25rem rgba(255, 170, 0, 0.35);
+}
+
+[data-bs-theme="dark"] .btn-primary {
+    background-color: #ffaa00;
+    border-color: #ffaa00;
+    color: #121212;
+}
+
+[data-bs-theme="dark"] .btn-primary:hover,
+[data-bs-theme="dark"] .btn-primary:focus,
+[data-bs-theme="dark"] .btn-primary:active {
+    background-color: #f49d1a !important;
+    border-color: #f49d1a !important;
+    color: #000000 !important;
+}
+
+[data-bs-theme="dark"] .toggle-password {
+    border-color: #444;
+    color: #bbb;
+}
+
+[data-bs-theme="dark"] .toggle-password:hover,
+[data-bs-theme="dark"] .toggle-password:focus {
+    color: #ffaa00;
+    border-color: #ffaa00;
+}
+
 [data-bs-theme="dark"] .btn-outline-secondary,
 [data-bs-theme="dark"] .btn-outline-light {
     color: #fff;
@@ -130,6 +269,18 @@ input.form-control.is-valid ~ .toggle-password {
     background-color: #ffaa00;
     color: #000;
     border-color: #ffaa00;
+}
+
+[data-bs-theme="dark"] .page-item.active .page-link {
+    background-color: #ffaa00;
+    border-color: #ffaa00;
+    color: #121212;
+}
+
+[data-bs-theme="dark"] .page-link {
+    background-color: #1e1e1e;
+    border-color: #444;
+    color: #ffaa00;
 }
 
 /* Transitions */
