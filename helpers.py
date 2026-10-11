@@ -1,16 +1,4 @@
-from flask import redirect, session
-from functools import wraps
+"""Root-level helpers module preserving backward compatibility."""
+from woofer.helpers import check_email, check_password, login_required, validate_name
 
-
-def login_required(f):
-    """
-    Decorate routes to require login.
-
-    https://flask.palletsprojects.com/en/1.1.x/patterns/viewdecorators/
-    """
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if session.get("user_id") is None:
-            return redirect("/login")
-        return f(*args, **kwargs)
-    return decorated_function
+__all__ = ["check_email", "check_password", "login_required", "validate_name"]
