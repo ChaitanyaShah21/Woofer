@@ -46,6 +46,10 @@ class Config:
     # Feed pagination defaults
     WOOFS_PER_PAGE = 20
 
+    # Rate limiting configuration
+    RATELIMIT_ENABLED = True
+    RATELIMIT_STORAGE_URI = "memory://"
+
 
 class DevelopmentConfig(Config):
     """Development environment configuration."""
@@ -59,6 +63,7 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     WTF_CSRF_ENABLED = False
     SESSION_COOKIE_SECURE = False
+    RATELIMIT_ENABLED = False
     SECRET_KEY = "test-secret-key-for-unit-tests"
     SERVER_NAME = "localhost.localdomain"
 

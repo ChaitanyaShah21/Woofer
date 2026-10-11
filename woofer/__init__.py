@@ -2,7 +2,7 @@
 import logging
 import os
 
-from flask import Flask
+from flask import Flask, render_template
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from woofer.blueprints.auth import auth_bp
@@ -10,7 +10,7 @@ from woofer.blueprints.core import core_bp
 from woofer.blueprints.user import user_bp
 from woofer.blueprints.woofs import woofs_bp
 from woofer.config import config_by_name
-from woofer.extensions import csrf, db, mail, migrate
+from woofer.extensions import csrf, db, limiter, mail, migrate
 
 
 def create_app(config_name: str | None = None) -> Flask:
@@ -47,6 +47,18 @@ def create_app(config_name: str | None = None) -> Flask:
     mail.init_app(app)
     csrf.init_app(app)
     migrate.init_app(app, db)
+    limiter.init_app(app)
+
+    # Custom 429 handler
+    @app.errorhandler(429)
+    def ratelimit_exceeded(e):
+        return (
+            render_template(
+                "layout.html",
+                error_message="Too many requests. Please slow down and try again later.",
+            ),
+            429,
+        )
 
     # Cache control headers
     @app.after_request

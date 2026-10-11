@@ -28,6 +28,11 @@
 
     <div class="container-fluid">
     <!-- Content here -->
+      {% if error_message %}
+      <div class="alert alert-danger text-center m-4" role="alert">
+        {{ error_message }}
+      </div>
+      {% endif %}
       {% block body %}{% endblock %}
     </div>
 

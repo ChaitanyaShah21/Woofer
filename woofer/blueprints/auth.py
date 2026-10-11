@@ -14,7 +14,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from woofer.extensions import db
+from woofer.extensions import db, limiter
 from woofer.helpers import check_email, check_password, validate_name
 from woofer.models import User
 from woofer.services.email import (
@@ -27,6 +27,7 @@ auth_bp = Blueprint("auth", __name__)
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
+@limiter.limit("3 per minute", methods=["POST"])
 def register():
     """Register a new user account."""
     session.clear()
@@ -169,6 +170,7 @@ def confirm_email(token):
 
 
 @auth_bp.route("/resend-verification", methods=["GET", "POST"])
+@limiter.limit("3 per minute", methods=["POST"])
 def resend_verification():
     """Resend verification link to an unverified account."""
     if request.method == "GET":
@@ -193,6 +195,7 @@ def resend_verification():
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("5 per minute", methods=["POST"])
 def login():
     """Log in existing user."""
     if request.method == "GET":
@@ -231,6 +234,7 @@ def logout():
 
 
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
+@limiter.limit("3 per minute", methods=["POST"])
 def forgot_password():
     """Request a password reset link via email."""
     error = ""

@@ -63,3 +63,27 @@ def test_password_change_invalidates_other_sessions(app, verified_user):
     assert b"Your session has expired or your password was changed" in resp2.data
 
 
+def test_login_rate_limiting(app):
+    """Submitting more than 5 login POST requests within a minute triggers HTTP 429."""
+    from woofer.extensions import limiter
+
+    app.config["RATELIMIT_ENABLED"] = True
+    limiter.enabled = True
+    limiter.init_app(app)
+    try:
+        client = app.test_client()
+
+        for _ in range(5):
+            resp = client.post("/login", data={"username": "test", "password": "wrong"})
+            assert resp.status_code in (200, 302)
+
+        # 6th request triggers rate limit
+        resp_blocked = client.post("/login", data={"username": "test", "password": "wrong"})
+        assert resp_blocked.status_code == 429
+        assert b"Too many requests" in resp_blocked.data
+    finally:
+        limiter.enabled = False
+        app.config["RATELIMIT_ENABLED"] = False
+
+
+
