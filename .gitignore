@@ -3,3 +3,20 @@
 flask_session/
 woofer.db
 todo.txt
+
+# Python cache & test artifacts
+instance/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Living documentation & portfolio notes (kept untracked)
+agents.md
+PROGRESS.md
+ARCHITECTURE.md
+DEFENCE.md
+BENCHMARKS.md
+FAILURES.md
+GLOSSARY.md
+placementproject.skill*
