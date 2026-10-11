@@ -88,19 +88,28 @@ erDiagram
 
 ---
 
-## 📊 Key Engineering Optimizations & Benchmarks
+## 📊 System Benchmarks & Engineering Specifications
 
-| Component | Before Upgrade | After Upgrade | Engineering Benefit |
+| Component | Baseline / Before | Production / After | Verified Metric & Engineering Impact |
 |---|---|---|---|
 | **Feed Query Overhead** | **51 SQL queries** (1 fetch + 50 lazy author queries) | **1 SQL query** (Single `JOIN` via `joinedload(Woof.author)`) | **98% reduction** in database round-trips; eliminates N+1 query burst. |
 | **Feed Memory Bounds** | Unbounded table scan (`.all()`) | Constant $O(1)$ memory via paginated window (`per_page=20`) | Prevents out-of-memory worker crashes on large datasets. |
+| **Database Indexing** | Table scans on email / feed sort | Composite B-Tree `(user_id, timestamp)` + unique `email` | **$O(\log N)$ point and range lookups** in SQLite/PostgreSQL. |
 | **Database Migrations** | Manual `db.create_all()` in REPL | Automated **Alembic / Flask-Migrate** version control | Safe, reversible schema evolution in production without downtime. |
 | **CSRF Defense** | Completely missing | **Flask-WTF `CSRFProtect`** across all POST forms | Protects against cross-site request forgery attacks. |
-| **Automated Testing** | 0 tests | **45 automated pytest tests** (100% pass rate) | Isolated in-memory SQLite and mocked email outbox; zero risk to production data. |
+| **Automated Testing** | 0 tests | **45 automated pytest tests** (100% pass rate in ~16s) | Isolated in-memory SQLite and mocked email outbox; zero risk to production data. |
 | **Health Check** | `/login` (HTML rendering) | Dedicated **`/health`** returning JSON + real DB ping | True infrastructure readiness indicator; returns 503 if DB is unreachable. |
-| **Connection Pool Health** | Stale socket crashes on Render | `pool_pre_ping=True`, bounds (5/10), 1800s recycle | Eliminates idle disconnect drops on cloud proxies. |
-| **Session Security** | Permanent sessions surviving password change | Multi-device revocation via `session_token` & rotation | Revokes all other sessions immediately on password change/reset. |
-| **Rate Limiting** | Unbounded auth endpoint spam | **Flask-Limiter** (5/min login, 3/min register & reset) | Prevents brute force credential stuffing & email bombing. |
+| **Connection Pool Health** | Stale socket crashes on Render | `pool_pre_ping=True`, bounds (5/10), 1800s recycle | Eliminates idle disconnect drops on cloud database proxies. |
+| **Session Invalidation** | Permanent sessions surviving password change | Multi-device revocation via `session_token` & rotation | Revokes all active sessions immediately on password change/reset. |
+| **Authentication Throttling** | Unbounded auth endpoint spam | **Flask-Limiter** (5/min login, 3/min register & reset) | Prevents brute force credential stuffing & email bombing. |
+| **Production WSGI Model** | Single process / unconfigured | Gunicorn `gthread` (2 workers $\times$ 2 threads, 1000 $\pm$ 50 req jitter) | Threaded concurrency with worker memory leak mitigation. |
+
+### 🎯 Architectural Highlights & Core Engineering Impact
+
+- **Query & Memory Optimization:** Eliminated the N+1 query bottleneck on high-throughput feed rendering by replacing lazy author lookups with SQLAlchemy `joinedload` and composite B-tree indexing on `(user_id, timestamp)`, slashing database round-trips by **98% (51 $\rightarrow$ 1 query)** and capping memory usage to $O(1)$ via paginated cursor windows.
+- **Concurrency & Transaction Boundaries:** Engineered atomic transaction boundaries to prevent TOCTOU race conditions during concurrent user registrations; trapped database-level `IntegrityError` and decoupled commits from daemon-thread email dispatch to guarantee zero phantom emails and complete state consistency.
+- **Session Security & Distributed Revocation:** Architected multi-device session revocation on credential changes using cryptographic `session_token` binding and session fixation rotation; integrated `Flask-Limiter` IP-based throttling across sensitive endpoints to mitigate credential stuffing and email bombing.
+- **Infrastructure Resilience & Quality:** Configured Gunicorn `gthread` worker concurrency and tuned SQLAlchemy connection pools (`pool_pre_ping=True`, 1800s recycle) to eliminate cloud firewall idle TCP socket drops; authored an isolated 45-test Pytest suite with zero external dependencies executed in GitHub Actions CI.
 
 ---
 
@@ -244,34 +253,6 @@ ruff check .
 | `MAIL_DEFAULT_SENDER` | Verified sender email configured in your Brevo dashboard |
 
 > **Note on Email on Render Free Tier:** Render blocks outbound SMTP ports (`25`, `465`, `587`) on free tier instances. Configuring `BREVO_API_KEY` routes email delivery through Brevo's HTTP API over HTTPS (port 443), ensuring reliable delivery without SMTP port blocks.
-
----
-
-## 📌 Resume Reference: Key Engineering Metrics & Bullets
-
-Use this reference section to quickly look up verified technical metrics and Google XYZ bullets directly for your resume:
-
-### Verified Quantitative Metrics Summary
-
-| Engineering Dimension | Baseline / Before | Optimized / After | Metric / Improvement | Source / Verification |
-|---|---|---|---|---|
-| **Feed Query Overhead** | 51 SQL queries (1 feed + 50 author lookups) | 1 SQL query (`joinedload` JOIN) | **98% query reduction** ($O(N) \rightarrow O(1)$ DB round-trips) | `pytest tests/test_benchmarks.py::test_feed_query_count` |
-| **Feed Memory Bounds** | Unbounded table scan (`.all()`) | Bounded cursor window (`per_page=20`) | **Constant $O(1)$ memory consumption** | `pytest tests/test_benchmarks.py::test_pagination_limit` |
-| **Database Indexing** | Table scans on email / feed sort | Composite B-Tree `(user_id, timestamp)` + unique `email` | **$O(\log N)$ point and range lookups** | `pytest tests/test_benchmarks.py::test_indexes_exist` |
-| **Automated Verification** | 0 tests | 45 isolated unit & integration tests | **100% pass rate in ~16s** with zero network/DB dependencies | `pytest -v` (GitHub Actions CI) |
-| **Authentication Throttling**| Unbounded POST spam | IP-based `Flask-Limiter` fixed window | **5 req/min on login; 3 req/min on register/resets** | `pytest tests/test_security.py::test_login_rate_limiting` |
-| **Session Invalidation** | Active sessions survived password change | Cryptographic `session_token` (64-char hex) binding | **Instant multi-device session revocation** on credential change | `pytest tests/test_security.py::test_password_change_invalidates_other_sessions` |
-| **Connection Pool Health** | Stale TCP disconnects on cloud DB | `pool_pre_ping=True`, bounds: 5 pool / 10 overflow / 1800s recycle | **Zero dropped connection errors**; HTTP 503 fallback | `pytest tests/test_health.py::test_pool_pre_ping_enabled_in_production` |
-| **Production WSGI Model** | Single process / unconfigured | Gunicorn `gthread` (2 workers $\times$ 2 threads, 1000 $\pm$ 50 req jitter) | **Threaded concurrency with memory leak defense** | `gunicorn.conf.py` |
-| **Reset Token Replay Defense** | Simple HMAC timestamp | Password state prefix binding + 3600s max age | **Zero replay risk** even within the valid 1-hour window | `pytest tests/test_auth.py::test_password_reset_workflow` |
-
-### Ready-to-Copy Resume Bullets (Google XYZ Format)
-
-**Woofer — High-Reliability Microblogging Engine & Data Access Layer** | *Python, Flask, PostgreSQL, SQLAlchemy, Gunicorn, Pytest, Docker/Linux, CI/CD*
-- **Query & Memory Optimization:** Eliminated the N+1 query bottleneck on high-throughput feed rendering by replacing lazy author lookups with SQLAlchemy `joinedload` and composite B-tree indexing on `(user_id, timestamp)`, slashing database round-trips by **98% (51 $\rightarrow$ 1 query)** and capping memory usage to $O(1)$ via paginated cursor windows.
-- **Concurrency & Transaction Boundaries:** Engineered atomic transaction boundaries to prevent TOCTOU race conditions during concurrent user registrations; trapped database-level `IntegrityError` and decoupled commits from daemon-thread email dispatch to guarantee zero phantom emails and complete state consistency.
-- **Session Security & Distributed Revocation:** Architected multi-device session revocation on credential changes using cryptographic `session_token` binding and session fixation rotation; integrated `Flask-Limiter` IP-based throttling across sensitive endpoints to mitigate credential stuffing and email bombing.
-- **Infrastructure Resilience & Quality:** Configured Gunicorn `gthread` worker concurrency and tuned SQLAlchemy connection pools (`pool_pre_ping=True`, 1800s recycle) to eliminate cloud firewall idle TCP socket drops; authored an isolated 45-test Pytest suite with zero external dependencies executed in GitHub Actions CI.
 
 ---
 
