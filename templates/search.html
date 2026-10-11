@@ -1,0 +1,86 @@
+{% extends "home_layout.html" %}
+
+{% block title %}
+    Search Woofs
+{% endblock %}
+
+{% block body %}
+    <div class="card mb-3">
+        <h4 class="card-header text-center">Search <span class="woofer"><strong>WOOFS</strong></span></h4>
+        <div class="card-body">
+            <form action="/search" method="get">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="q" placeholder="Search woofs, @usernames, or #tags..." value="{{ query }}">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if query %}
+        <h5 class="text-muted mb-3">
+            Search results for "<strong>{{ query }}</strong>" ({{ pagination.total }} found)
+        </h5>
+    {% endif %}
+
+    {% if woof_data %}
+        {% for woofs in woof_data %}
+        <div class="card my-2">
+            <div class="card-body">
+                <h5 class="card-title">{{ woofs['firstName'] }} {{ woofs['lastName'] }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">@{{ woofs['username'] }}</h6>
+                <p class="card-text">{{ woofs['woof'] }}</p>
+                <small class="text-muted local-time" data-utc="{{ woofs['timestamp'] }}"></small>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Pagination Controls -->
+        {% if pagination.pages > 1 %}
+        <nav aria-label="Search results pages" class="my-3">
+            <ul class="pagination justify-content-center">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('woofs.search', q=query, page=pagination.prev_num) }}">Previous</a>
+                </li>
+                {% endif %}
+                <li class="page-item active">
+                    <span class="page-link">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+                </li>
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('woofs.search', q=query, page=pagination.next_num) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    {% elif query %}
+        <div class="alert alert-info">
+            No woofs found matching "<strong>{{ query }}</strong>". Try a different keyword!
+        </div>
+    {% endif %}
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const timeElements = document.querySelectorAll('.local-time');
+        timeElements.forEach(el => {
+            const utcTime = el.getAttribute('data-utc');
+            if (utcTime) {
+                const localDate = new Date(utcTime);
+                el.textContent = localDate.toLocaleString([], {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                });
+            }
+        });
+    });
+    </script>
+{% endblock %}
+
