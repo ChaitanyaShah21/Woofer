@@ -1,7 +1,9 @@
 """Core blueprint: health check endpoint and error handlers."""
+import contextlib
+
 from flask import Blueprint, current_app, jsonify, render_template
 from sqlalchemy import text
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 from woofer.extensions import db
 
@@ -42,12 +44,16 @@ def not_found(error):
 
 @core_bp.app_errorhandler(500)
 def internal_server_error(error):
+    with contextlib.suppress(SQLAlchemyError):
+        db.session.rollback()
     return render_template("layout.html", error_message="Internal Server Error"), 500
 
 
 @core_bp.app_errorhandler(OperationalError)
 def handle_db_operational_error(error):
     current_app.logger.critical("Database operational failure: %s", error)
+    with contextlib.suppress(SQLAlchemyError):
+        db.session.rollback()
     return (
         render_template(
             "layout.html",

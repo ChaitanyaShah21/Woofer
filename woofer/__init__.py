@@ -1,4 +1,5 @@
 """Application factory for Woofer."""
+import contextlib
 import logging
 import os
 
@@ -100,4 +101,105 @@ def create_app(config_name: str | None = None) -> Flask:
             format="%(asctime)s [%(levelname)s] in %(module)s: %(message)s",
         )
 
+    # Ensure database schema is synchronized across migrations and legacy databases
+    sync_database_schema(app)
+
     return app
+
+
+def sync_database_schema(app: Flask) -> None:
+    """Synchronize database schema defensively on startup to support legacy databases."""
+    if app.config.get("TESTING"):
+        return
+
+    with app.app_context():
+        # 1. Attempt standard Flask-Migrate upgrade
+        try:
+            from flask_migrate import upgrade
+            upgrade()
+            app.logger.info("Alembic database migrations applied successfully.")
+        except Exception as exc:  # noqa: BLE001
+            app.logger.warning("Flask-Migrate upgrade bypassed or failed: %s", exc)
+            with contextlib.suppress(Exception):
+                db.session.rollback()
+
+        # 2. Defensive schema alignment for production databases
+        try:
+            from sqlalchemy import inspect, text
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
+
+            if "users" not in tables:
+                db.create_all()
+                tables = inspector.get_table_names()
+
+            if "users" in tables:
+                cols = {c["name"] for c in inspector.get_columns("users")}
+                is_pg = "postgres" in str(db.engine.url)
+
+                with db.engine.begin() as conn:
+                    if "session_token" not in cols:
+                        sql = (
+                            "ALTER TABLE users ADD COLUMN IF NOT EXISTS session_token VARCHAR(64) DEFAULT 'legacy_initial_token'"
+                            if is_pg
+                            else "ALTER TABLE users ADD COLUMN session_token VARCHAR(64) DEFAULT 'legacy_initial_token'"
+                        )
+                        conn.execute(text(sql))
+                        app.logger.info("Successfully added session_token to users table.")
+
+                    if "reset_token_used" not in cols:
+                        sql = (
+                            "ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_used BOOLEAN DEFAULT FALSE"
+                            if is_pg
+                            else "ALTER TABLE users ADD COLUMN reset_token_used BOOLEAN DEFAULT 0"
+                        )
+                        conn.execute(text(sql))
+
+                    if "is_verified" not in cols:
+                        sql = (
+                            "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE"
+                            if is_pg
+                            else "ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT 0"
+                        )
+                        conn.execute(text(sql))
+
+                    if "created_at" not in cols:
+                        sql = (
+                            "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP"
+                            if is_pg
+                            else "ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+                        )
+                        conn.execute(text(sql))
+
+                    if "followers" not in cols:
+                        sql = (
+                            "ALTER TABLE users ADD COLUMN IF NOT EXISTS followers INTEGER DEFAULT 0"
+                            if is_pg
+                            else "ALTER TABLE users ADD COLUMN followers INTEGER DEFAULT 0"
+                        )
+                        conn.execute(text(sql))
+
+                    if "following" not in cols:
+                        sql = (
+                            "ALTER TABLE users ADD COLUMN IF NOT EXISTS following INTEGER DEFAULT 0"
+                            if is_pg
+                            else "ALTER TABLE users ADD COLUMN following INTEGER DEFAULT 0"
+                        )
+                        conn.execute(text(sql))
+
+            if "woofs" in tables:
+                woof_cols = {c["name"] for c in inspector.get_columns("woofs")}
+                is_pg = "postgres" in str(db.engine.url)
+                if "timestamp" not in woof_cols:
+                    sql = (
+                        "ALTER TABLE woofs ADD COLUMN IF NOT EXISTS timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP"
+                        if is_pg
+                        else "ALTER TABLE woofs ADD COLUMN timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+                    )
+                    with db.engine.begin() as conn:
+                        conn.execute(text(sql))
+
+        except Exception as exc:  # noqa: BLE001
+            app.logger.warning("Defensive schema sync encountered an issue: %s", exc)
+            with contextlib.suppress(Exception):
+                db.session.rollback()
