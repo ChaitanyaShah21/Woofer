@@ -1,4 +1,4 @@
-"""Database models for Woofer application."""
+import secrets
 from datetime import UTC, datetime
 
 from woofer.extensions import db
@@ -15,6 +15,11 @@ class User(db.Model):
     hash = db.Column(db.Text, nullable=False)
     is_verified = db.Column(db.Boolean, nullable=False, default=False)
     reset_token_used = db.Column(db.Boolean, default=False)
+    session_token = db.Column(
+        db.String(64),
+        nullable=False,
+        default=lambda: secrets.token_hex(32)
+    )
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

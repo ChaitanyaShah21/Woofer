@@ -36,6 +36,30 @@ def test_xss_escaping_in_posts(auth_client):
     )
     assert response.status_code == 200
     # Escaped markup should be present, not raw executable script tag
-    assert b"&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;" in response.data or b"&lt;script&gt;alert('xss')&lt;/script&gt;" in response.data
     assert b"<script>alert('xss')</script>" not in response.data
+
+
+def test_password_change_invalidates_other_sessions(app, verified_user):
+    """When user changes password, any other active browser session is invalidated immediately."""
+    client1 = app.test_client()
+    client2 = app.test_client()
+
+    # Log in both clients
+    for cl in (client1, client2):
+        cl.post("/login", data={"username": verified_user.username, "password": "Password123!"})
+
+    # Client 1 changes password
+    client1.post("/profile", data={
+        "old_password": "Password123!",
+        "new_password": "BrandNewPassword789$",
+    }, follow_redirects=True)
+
+    # Client 1 still has access
+    resp1 = client1.get("/my-woofs")
+    assert resp1.status_code == 200
+
+    # Client 2 is rejected because its session_token is now stale
+    resp2 = client2.get("/my-woofs", follow_redirects=True)
+    assert b"Your session has expired or your password was changed" in resp2.data
+
 

@@ -55,4 +55,5 @@ def auth_client(client, verified_user):
     """Client authenticated as verified_user."""
     with client.session_transaction() as sess:
         sess["user_id"] = verified_user.id
+        sess["session_token"] = verified_user.session_token
     return client

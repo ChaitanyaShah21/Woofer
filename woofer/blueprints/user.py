@@ -1,4 +1,5 @@
-"""User profile blueprint: profile view and password updates."""
+import secrets
+
 from flask import (
     Blueprint,
     flash,
@@ -59,7 +60,10 @@ def profile():
         return redirect("/profile")
 
     user.hash = generate_password_hash(new_password)
+    user.session_token = secrets.token_hex(32)  # Invalidate all other sessions
     db.session.commit()
+    # Re-bind current session so user stays logged in on current device
+    session["session_token"] = user.session_token
     flash("Password successfully updated!", "success")
     return redirect("/profile")
 

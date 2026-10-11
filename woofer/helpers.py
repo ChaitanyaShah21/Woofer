@@ -3,15 +3,30 @@ import re
 import string
 from functools import wraps
 
-from flask import redirect, session
+from flask import flash, redirect, session
+
+from woofer.extensions import db
+from woofer.models import User
 
 
 def login_required(f):
-    """Decorate routes to require login."""
+    """Decorate routes to require login and validate session token."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if session.get("user_id") is None:
+        user_id = session.get("user_id")
+        session_token = session.get("session_token")
+
+        if not user_id or not session_token:
+            session.clear()
             return redirect("/login")
+
+        user = db.session.get(User, user_id)
+        if not user or user.session_token != session_token:
+            # Token mismatch means password changed or session was revoked
+            session.clear()
+            flash("Your session has expired or your password was changed. Please log in again.", "warning")
+            return redirect("/login")
+
         return f(*args, **kwargs)
     return decorated_function
 

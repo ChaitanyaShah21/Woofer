@@ -44,9 +44,9 @@ def test_feed_query_count(auth_client, app):
     try:
         response = auth_client.get("/")
         assert response.status_code == 200
-        # Exactly 2 queries: 1 for pagination COUNT(*) and 1 for joined posts+authors
-        # Previously without eager loading and pagination: 1 + 50 = 51 queries
-        assert len(queries) <= 2, f"Expected <= 2 queries, but {len(queries)} executed:\n" + "\n".join(queries)
+        # Up to 3 queries: 1 for session token validation, 1 for joined posts+authors, and 1 for pagination COUNT(*)
+        # Previously without eager loading and pagination: 1 (posts) + 50 (author N+1 queries) = 51 queries
+        assert len(queries) <= 3, f"Expected <= 3 queries, but {len(queries)} executed:\n" + "\n".join(queries)
     finally:
         event.remove(db.engine, "before_cursor_execute", count_queries)
 

@@ -1,4 +1,5 @@
-"""Authentication blueprint: registration, login, logout, email confirmation, and password reset."""
+import secrets
+
 from flask import (
     Blueprint,
     current_app,
@@ -214,7 +215,10 @@ def login():
         error = "Email not verified. Check your inbox for verification mail"
         return render_template("login.html", error=error)
 
+    # Purge pre-authentication session (fixes session fixation)
+    session.clear()
     session["user_id"] = user.id
+    session["session_token"] = user.session_token
     session.permanent = True
     return redirect("/")
 
@@ -309,6 +313,7 @@ def reset_password(token):
             )
 
         user.hash = generate_password_hash(new_password)
+        user.session_token = secrets.token_hex(32)  # Invalidate all active sessions
         user.reset_token_used = True
         db.session.commit()
         flash("Password successfully reset!", "success")
