@@ -10,6 +10,7 @@ from flask import (
 )
 from itsdangerous import BadSignature, SignatureExpired
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from woofer.extensions import db
@@ -108,17 +109,40 @@ def register():
     )
     db.session.add(new_user)
     try:
-        db.session.flush()
-        send_verification_email(new_user)
+        # 1. Commit FIRST to guarantee transactional atomicity
         db.session.commit()
+    except IntegrityError as e:
+        db.session.rollback()
+        err_str = str(e.orig).lower() if hasattr(e, "orig") else str(e).lower()
+
+        # Identify which unique constraint failed
+        if "username" in err_str:
+            register_data["uname"] = "is-invalid"
+            register_data["uname_error"] = "Username already taken!"
+        elif "email" in err_str:
+            register_data["mail"] = "is-invalid"
+            register_data["email_error"] = "Email already linked to an existing account."
+        else:
+            register_data["uname"] = "is-invalid"
+            register_data["uname_error"] = "Account with these details already exists."
+
+        return render_template("register.html", data=register_data)
     except Exception:
         db.session.rollback()
-        current_app.logger.exception("Unable to send verification email during registration")
-        flash(
-            "Your account was not created because the verification email could not be sent. Please try again later.",
-            "danger",
-        )
+        current_app.logger.exception("Unexpected error during account persistence")
+        flash("Could not create account due to a server error. Please try again.", "danger")
         return redirect("/register")
+
+    # 2. ONLY dispatch verification email AFTER transaction successfully commits
+    try:
+        send_verification_email(new_user)
+    except Exception:
+        current_app.logger.exception("Failed to dispatch verification email to %s", new_user.email)
+        flash(
+            "Account created, but verification email could not be sent. Please use 'Resend verification'.",
+            "warning",
+        )
+        return redirect("/login")
 
     flash("Verification link sent to your email.", "info")
     return redirect("/login")

@@ -1,4 +1,6 @@
-"""Tests for user registration, authentication, verification, and password reset."""
+from unittest.mock import patch
+
+from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from woofer.extensions import db
@@ -65,6 +67,26 @@ def test_register_duplicate_email_fails(client, verified_user):
     )
     assert response.status_code == 200
     assert b"Email already linked" in response.data
+
+
+def test_register_concurrent_integrity_error(client):
+    """If database throws IntegrityError on commit (simulating race condition), transaction rolls back safely."""
+    with patch(
+        "woofer.blueprints.auth.db.session.commit",
+        side_effect=IntegrityError("mock", "params", "UNIQUE constraint failed: users.username"),
+    ):
+        response = client.post(
+            "/register",
+            data={
+                "firstName": "John",
+                "lastName": "Doe",
+                "username": "raceuser",
+                "registerEmail": "race@example.com",
+                "password": "Password123!",
+            },
+        )
+        assert response.status_code == 200
+        assert b"Username already taken!" in response.data
 
 
 def test_register_weak_password_fails(client):
