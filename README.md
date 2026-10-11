@@ -70,6 +70,7 @@ erDiagram
         string username "NOT NULL, UNIQUE, INDEX"
         string email "NOT NULL, INDEX"
         string hash "NOT NULL (pbkdf2:sha256)"
+        string session_token "NOT NULL"
         boolean is_verified "DEFAULT false"
         boolean reset_token_used "DEFAULT false"
         datetime created_at "NOT NULL, UTC"
@@ -95,8 +96,11 @@ erDiagram
 | **Feed Memory Bounds** | Unbounded table scan (`.all()`) | Constant $O(1)$ memory via paginated window (`per_page=20`) | Prevents out-of-memory worker crashes on large datasets. |
 | **Database Migrations** | Manual `db.create_all()` in REPL | Automated **Alembic / Flask-Migrate** version control | Safe, reversible schema evolution in production without downtime. |
 | **CSRF Defense** | Completely missing | **Flask-WTF `CSRFProtect`** across all POST forms | Protects against cross-site request forgery attacks. |
-| **Automated Testing** | 0 tests | **40 automated pytest tests** (100% pass rate) | Isolated in-memory SQLite and mocked email outbox; zero risk to production data. |
+| **Automated Testing** | 0 tests | **45 automated pytest tests** (100% pass rate) | Isolated in-memory SQLite and mocked email outbox; zero risk to production data. |
 | **Health Check** | `/login` (HTML rendering) | Dedicated **`/health`** returning JSON + real DB ping | True infrastructure readiness indicator; returns 503 if DB is unreachable. |
+| **Connection Pool Health** | Stale socket crashes on Render | `pool_pre_ping=True`, bounds (5/10), 1800s recycle | Eliminates idle disconnect drops on cloud proxies. |
+| **Session Security** | Permanent sessions surviving password change | Multi-device revocation via `session_token` & rotation | Revokes all other sessions immediately on password change/reset. |
+| **Rate Limiting** | Unbounded auth endpoint spam | **Flask-Limiter** (5/min login, 3/min register & reset) | Prevents brute force credential stuffing & email bombing. |
 
 ---
 
@@ -105,9 +109,9 @@ erDiagram
 - **Backend Framework:** Python 3.12, Flask 2.2.5
 - **ORM & Migrations:** Flask-SQLAlchemy 3.1.1, SQLAlchemy 2.x, Flask-Migrate 4.1.0 (Alembic)
 - **Database:** PostgreSQL (Render production), SQLite (in-memory test isolation)
-- **Security:** Flask-WTF (CSRF protection), itsdangerous (timed HMAC tokens), Werkzeug (password hashing)
+- **Security:** Flask-WTF (CSRF protection), Flask-Limiter (rate limiting), itsdangerous (timed HMAC tokens), Werkzeug (password hashing)
 - **Email Delivery:** Brevo HTTP API (Port 443 / HTTPS) with SMTP TLS fallback
-- **WSGI & Deployment:** Gunicorn 21.2.0, Werkzeug ProxyFix
+- **WSGI & Deployment:** Gunicorn 21.2.0 (`gthread` worker model via `gunicorn.conf.py`), Werkzeug ProxyFix
 - **Testing & Quality:** Pytest 9.x, Ruff 0.17.x
 - **Frontend:** HTML5, CSS3, JavaScript, Bootstrap 5.3
 
@@ -119,6 +123,10 @@ erDiagram
   - Secure registration and login with salt-hashed passwords (`generate_password_hash`).
   - Cryptographically signed email verification tokens (`URLSafeTimedSerializer`).
   - Password reset tokens cryptographically bound to password state (prevents replay attacks).
+  - Multi-device session invalidation on password change or reset via cryptographic `session_token`.
+  - Session rotation on login to eliminate session fixation.
+  - IP-based rate limiting on sensitive authentication endpoints via `Flask-Limiter`.
+  - Defensive HTTP headers (nosniff, DENY frame options, Content Security Policy, HSTS).
   - Server-side CSRF validation on all state-changing endpoints.
   - Strict password complexity enforcement ($\ge 8$ chars, uppercase, lowercase, number, symbol).
 - **Woofing (Microblogging):**
@@ -184,7 +192,7 @@ flask db upgrade
 ```bash
 python app.py
 # Or with Gunicorn:
-gunicorn --bind 0.0.0.0:5000 app:app
+gunicorn -c gunicorn.conf.py app:app
 ```
 Access the application at `http://127.0.0.1:5000`.
 
@@ -195,7 +203,7 @@ Access the application at `http://127.0.0.1:5000`.
 Tests run against an ephemeral in-memory SQLite database and mock all email transmissions into a test outbox. The test suite **never** modifies the production database or calls external network APIs.
 
 ```bash
-# Run the complete test suite (40 tests)
+# Run the complete test suite (45 tests)
 pytest -v
 
 # Run benchmark verification tests
@@ -218,7 +226,7 @@ ruff check .
    ```
 3. **Start Command:**
    ```bash
-   gunicorn --bind 0.0.0.0:$PORT app:app
+   gunicorn -c gunicorn.conf.py app:app
    ```
 4. **Health Check Path:**
    ```
