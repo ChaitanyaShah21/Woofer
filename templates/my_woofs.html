@@ -26,6 +26,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <small class="text-muted local-time" data-utc="{{ woofs['timestamp'] }}"></small>
                     <form action="/delete-woof" method="POST" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="woof_id" value="{{ woofs['id'] }}">
                         <button class="btn btn-danger btn-sm d-flex justify-content-center align-items-center"
                                 onclick="return confirm('Are you sure you want to delete this woof?')" type="submit">

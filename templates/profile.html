@@ -36,6 +36,7 @@
         <div class="card-body">
             <h5 class="card-title">Change Password</h5>
             <form action="/profile" method="post" class="needs-validation" id="change_password" autocomplete="off">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                   <div class="form-floating mb-3">
                     <input type="password" autocomplete="new-password" class="form-control" id="old_password" name="old_password" placeholder="Old Password">

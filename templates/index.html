@@ -8,9 +8,10 @@
     <div class="card">
         <h4 class="card-header text-center">Send a <span class="woofer"><strong>WOOF!</strong></span> </h4>
       <div class="card-body">
-        <form action="/" method="post"id="post-woof">
+        <form action="/" method="post" id="post-woof">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="input-group">
-            <textarea class="form-control" id="send-woof" name="send-woof" placeholder="What's on your mind?" ></textarea>
+            <textarea class="form-control" id="send-woof" name="send-woof" maxlength="280" placeholder="What's on your mind?"></textarea>
             <script>
                 const myText = document.getElementById("send-woof");
                 myText.style.cssText = `height: ${myText.scrollHeight}px; overflow-y: hidden`;
