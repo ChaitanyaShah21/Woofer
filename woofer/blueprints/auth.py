@@ -218,6 +218,10 @@ def login():
         error = "Email not verified. Check your inbox for verification mail"
         return render_template("login.html", error=error)
 
+    if not user.session_token:
+        user.session_token = secrets.token_hex(32)
+        db.session.commit()
+
     # Purge pre-authentication session (fixes session fixation)
     session.clear()
     session["user_id"] = user.id

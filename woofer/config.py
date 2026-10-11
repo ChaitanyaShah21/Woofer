@@ -58,6 +58,7 @@ class Config:
         "max_overflow": 10,
         "pool_timeout": 30,
         "pool_recycle": 1800,
+        **({"connect_args": {"connect_timeout": 10}} if RAW_DATABASE_URL and "postgres" in RAW_DATABASE_URL else {}),
     }
 
 
